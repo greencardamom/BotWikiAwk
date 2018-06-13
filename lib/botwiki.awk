@@ -58,35 +58,35 @@ BEGIN {
 
   # 5a. Dependencies for library.awk 
 
-  Exe["date"] = "/bin/date"
-  Exe["mkdir"] = "/bin/mkdir"
-  Exe["rm"] = "/bin/rm"
-  Exe["sed"] = "/bin/sed"
-  Exe["tac"] = "/usr/bin/tac"             # GNU
-  Exe["timeout"] = "/usr/bin/timeout"     # GNU 
-  Exe["wget"] = "/usr/bin/wget"
+  Exe["date"] = 
+  Exe["mkdir"] = 
+  Exe["rm"] = 
+  Exe["sed"] =  
+  Exe["tac"] = 
+  Exe["timeout"] = 
+  Exe["wget"] = 
 
   # 5b. driver.awk
-  Exe["grep"] = "/bin/grep"
-  Exe["gzip"] = "/bin/gzip"
-  Exe["mv"] = "/bin/mv"
+  Exe["grep"] = 
+  Exe["gzip"] = 
+  Exe["mv"] = 
 
   # 5c. bug.awk
-  Exe["cat"] = "/bin/cat"
-  Exe["diff"] = "/usr/bin/diff"           # GNU 
+  Exe["cat"] = 
+  Exe["diff"] = 
 
   # 5d. project.awk
-  Exe["cp"] = "/bin/cp"
-  Exe["head"] = "/usr/bin/head"
-  Exe["ls"] = "/bin/ls"
-  Exe["tail"] = "/usr/bin/tail"
+  Exe["cp"] = 
+  Exe["head"] = 
+  Exe["ls"] = 
+  Exe["tail"] = 
   
   # 5e. runbot.awk
-  Exe["parallel"] = "/usr/bin/parallel"   # GNU
+  Exe["parallel"] = 
 
   # 5f. makebot.awk
-  Exe["chmod"] = "/bin/chmod"
-  Exe["ln"] = "/bin/ln"
+  Exe["chmod"] = 
+  Exe["ln"] = 
 
   # 6. Color inline diffs. Requires wdiff
   #   sudo apt-get install wdiff

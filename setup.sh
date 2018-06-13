@@ -52,11 +52,12 @@ for s in "$awkloc"; do
 done
 
 if [ -z "$awkpath" ]; then
+  echo "Unable to determine path to awk. Set awkpath=\"path\" manually in setup.sh right above this message."
   exit
 fi
 
-# Load environment variables 
-"${awkpath}" -v awkpath="$awkpath" 'BEGIN {
+# Load environment variables
+envok=$("${awkpath}" -v awkpath="$awkpath" 'BEGIN {
 
   c = split(ENVIRON["AWKPATH"], a, ":")
   for(i = 1; i <= c; i++) {
@@ -73,17 +74,36 @@ fi
     }
   }
   if( length(inenv["awkpath"]) == 0 || length(inenv["path"]) == 0) {
-    print "Unable to find PATH and/or AWKPATH for BotWikiAwk. See setup instructions. Log-out/in."
+    print "0"
     exit
   }
-  _SkipSetup = 1 # skip BEGIN{} section in library.awk
-}
+  print "1"
+}')
 
-# Load library
-@include "library.awk"
+if [ "$envok" = "0" ]; then
+  echo "Unable to find PATH and/or AWKPATH for BotWikiAwk. See setup instructions. Log-out/in."
+  exit
+fi
 
 # Download wikiget, load manifest, set shebangs, create exe paths, create symlinks
-BEGIN {
+
+"${awkpath}" -ilibrary -v awkpath="$awkpath" 'BEGIN {
+
+
+  c = split(ENVIRON["AWKPATH"], a, ":")
+  for(i = 1; i <= c; i++) {
+    if(a[i] ~ /BotWikiAwk/) {
+      inenv["awkpath"] = a[i]
+      break
+    }
+  }
+  c = split(ENVIRON["PATH"], a, ":")
+  for(i = 1; i <= c; i++) {
+    if(a[i] ~ /BotWikiAwk/) {
+      inenv["path"] = a[i]
+      break
+    }
+  }
 
   sub(/lib\/?$/, "", inenv["awkpath"])
   if(! chDir(inenv["awkpath"])) {
@@ -92,8 +112,8 @@ BEGIN {
   }
 
  # download wikiget.awk
-  if(!sys2var(sprintf("command -v %s","wget")) {
-    stdErr("setup.sh: Unable to find 'wget' and can't download 'wikiget.awk' from GitHub. Install 'wikiget' manually in ~/bin")
+  if(!sys2var(sprintf("command -v %s","wget"))) {
+    stdErr("setup.sh: Unable to find wget and cannot download wikiget.awk from GitHub. Install wikiget manually in ~/bin")
   }
   else {
     p = sys2var("wget -q -O- " shquote("https://raw.githubusercontent.com/greencardamom/Wikiget/master/wikiget.awk"))
@@ -102,7 +122,7 @@ BEGIN {
       close("bin/wikiget.awk")
     }
     else 
-      stdErr("setup.sh: Unable to download 'wikiget.awk' from GitHub. Install manually in ~/bin")
+      stdErr("setup.sh: Unable to download wikiget.awk from GitHub. Install manually in ~/bin")
   }
 
   manfp = readfile("manifest")
