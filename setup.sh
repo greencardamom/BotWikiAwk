@@ -51,6 +51,7 @@ for s in "$awkloc"; do
         fi
     else
         echo "Unable to find GNU Awk in path, setup aborting.\n . Manually set hashbangs in *.awk (~/bin, ~/scripts (including clearlogs) and ~/skeleton)\n . Manually update Exe[] pathnames in ~/lib/botwiki.awk" 
+        awkpath=""
     fi
 done
 
@@ -157,15 +158,15 @@ fi
       c = split(splitx(a[i], "[=]", 2), b, " ")
       for(j = 1; j <= c; j++) {  
         b[j] = strip(b[j])
-        p = sys2var(sprintf("command -v %s",b[j]))
+        p = strip(sys2var(sprintf("command -v %s",b[j])))
         re = "Exe\\[\"" b[j] "\"\\][ ]*[=][ ]*[.]{3,}"
         if(! p) {
           stdErr("  . Warning: Unable to find path for Exe[\"" b[j] "\"] in " botwikifile " - please add it manually")
           sub(re, "Exe[\"" b[j] "\"] = ", fp)  
         }
         else {
-          if(sub(re, "Exe[\"" b[j] "\"] = " p, fp)) {
-            stdErr("  . Exe[\"" b[j] "\"] = " p)
+          if(sub(re, "Exe[\"" b[j] "\"] = \"" p "\"", fp)) {
+            stdErr("  Adding Exe[\"" b[j] "\"] = \"" p "\"")
             Exe[b[j]] = p
           }
         }

@@ -97,7 +97,6 @@ BEGIN {
   #    (copy a .wav file from Windows)
   #    Use full path/filenames for player and sound file
   # Exe["bell"] = "/usr/bin/play -q /home/adminuser/scripts/chord.wav"
-  Exe["bell"] = 
 
   # 8. bot executables local
   Exe[BotName]  = Home BotName
