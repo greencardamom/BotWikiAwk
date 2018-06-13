@@ -8,4 +8,4 @@
 * Includes example bots, and skeleton bots for creating a new one (in awk) 
 * Includes set of awk library routines developed over years of writing bots 
 
-(Documentation)[https://en.wikipedia.org/wiki/User:GreenC/BotWikiAwk]
+[Documentation](https://en.wikipedia.org/wiki/User:GreenC/BotWikiAwk)
