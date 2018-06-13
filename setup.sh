@@ -125,12 +125,15 @@ fi
       stdErr("setup.sh: Unable to download wikiget.awk from GitHub. Install manually in ~/bin")
   }
 
+  PROCINFO["sorted_in"] = "@ind_str_asc"
+
   manfp = readfile("manifest")
   if(empty(manfp)) {
     stdErr("setup.csh: Unable to find manifest")
     exit
   }
-  for(i = 1; i <= splitn(manfp, a, i); i++) {
+  s = splitn(manfp, a)
+  for(i = s; i > 0; i--) {
     delete b
 
     botwikifile = "lib/botwiki.awk"
@@ -153,6 +156,7 @@ fi
         else {
           if(sub(re, "Exe[\"" b[j] "\"] = " p, fp)) {
             stdErr("  . Exe[\"" b[j] "\"] = " p)
+            Exe[b[j]] = p
           }
         }
       }
@@ -169,14 +173,21 @@ fi
       for(j = 1; j <= c; j++) {
         # create symlinks
         if(b[j] !~ "scripts") {
-          if(! checkexists(splitx(b[j], ".", 1))) 
-            sys2var(Exe["ln"] " -t " splitx(b[j], "/", 1) " -s " splitx(b[j], "/", 2) " " splitx(splitx(b[j], "/", 2), ".", 1))
+          if(! checkexists(splitx(b[j], ".", 1))) {
+            chDir(splitx(b[j], "/", 1))
+            command = "ln -s " splitx(b[j], "/", 2) " " splitx(splitx(b[j], "/", 2), ".", 1)
+            sys2var(command)
+            chDir("..")
+          }
         }
         # set shebangs
         fp = readfile(strip(b[j]) )
-        stdErr("  . " strip(b[j]) )
-        sub(/^[#][!]\/usr\/local\/bin\/awk/, "#!" awkpath, fp)
-        print fp > b[j]
+        if(sub(/^[#][!]\/usr\/local\/bin\/[g]?awk/, "#!" awkpath, fp)) {
+          print fp > b[j]
+          stdErr(" Updated shebang of " strip(b[j]) )
+        }
+        else
+          stdErr(" Did not update shebang of " strip(b[j]) )
         close(b[j])
       }      
     }
