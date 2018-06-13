@@ -36,7 +36,7 @@ else
 fi
 
 # Optional: add a hardcoded path to awk
-#  awkpath="/data/project/local/bin/gawk"
+#  awkn="/data/project/local/bin/gawk"
 
 awkloc=$("$awkn" --version)
 substr="GNU Awk"
@@ -45,8 +45,8 @@ substr="GNU Awk"
 for s in "$awkloc"; do
     if case ${s} in *"${substr}"*) true;; *) false;; esac; then
         awkpath=$(command -v "$awkn")
-        if [ $("${awkpath}" -v s="$s" 'BEGIN {if(s ~ /GNU Awk [123]/) {print 0; exit}; print 1}') = 0 ]; then
-            echo "GNU Awk 4.x+ required"
+        if [ $("${awkpath}" -v s="$s" 'BEGIN {if(s ~ /GNU Awk [123]|GNU Awk 4[.]0/) {print 0; exit}; print 1}') = 0 ]; then
+            echo "GNU Awk 4.1+ required"
             awkpath=""
         fi
     else
@@ -55,7 +55,7 @@ for s in "$awkloc"; do
 done
 
 if [ -z "$awkpath" ]; then
-  echo "Unable to determine path to awk. Set awkpath=\"path\" manually in setup.sh right above this message."
+  echo "Unable to determine path to awk 4.1+.\n Set awkn=\"/localpath/../gawk\" in setup.sh in the section \"add a hardcoded path to awk\"."
   exit
 fi
 
@@ -128,6 +128,17 @@ fi
       stdErr("setup.sh: Unable to download wikiget.awk from GitHub. Install manually in ~/bin")
   }
 
+  botwikifile = "lib/botwiki.awk"
+
+  # set default path
+  print inenv["awkpath"]
+  fp = readfile(botwikifile)
+  fp2 = subs("Home = \"/home/adminuser/BotWikiBot/bots/", "Home = \"" inenv["awkpath"] "bots/", fp)
+  if(fp != fp2) {
+    print fp > botwikifile
+    close(botwikifile)
+  }
+
   manfp = readfile("manifest")
   if(empty(manfp)) {
     stdErr("setup.sh: Unable to find manifest")
@@ -136,8 +147,6 @@ fi
   s = splitn(manfp, a)
   for(i = s; i > 0; i--) {
     delete b
-
-    botwikifile = "lib/botwiki.awk"
 
    # set Exe[] paths
     if(a[i] ~ /^dependencies/) {
