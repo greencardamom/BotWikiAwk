@@ -1,0 +1,190 @@
+#!/usr/local/bin/gawk -bE
+
+# Create data files/directories and launch bot
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2018 by User:GreenC (at en.wikipedia.org)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,         
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+# get bot name
+BEGIN {
+  delete _pwdA
+  _pwdC = split(ENVIRON["PWD"],_pwdA,"/")
+  BotName = _pwdA[_pwdC]
+}
+
+@include "botwiki.awk"
+@include "library.awk"
+
+BEGIN {
+
+  # skip any bots that have a custom version
+  if(BotName == "wm2") {
+    print "See driverm.awk"
+    exit
+  }
+
+  Optind = Opterr = 1
+  while ((C = getopt(ARGC, ARGV, "hd:p:n:")) != -1) {
+      opts++
+      if(C == "p")                 #  -p <project>   Use project name. Default in project.cfg
+        pid = verifypid(Optarg)
+      if(C == "n")                 #  -n <name>      Name to process.
+        namewiki = verifyval(Optarg)
+      if(C == "d")                 #  -d <y|n>       Dry run. "y" = push changes to Wikipedia.
+        dryrun = verifyval(Optarg)
+
+      if(C == "h") {
+        usage()
+        exit
+      }
+  }
+
+  if( pid ~ /error/ || ! opts || namewiki == "" ) {
+    usage()
+    exit
+  }
+
+# library.awk .. load Project[] paths via project.cfg
+  setProject(pid)    
+
+  if( ! checkexe(Exe["wikiget"], "wikiget") || ! checkexe(Exe["date"], "date") || ! checkexe(Exe["cp"], "cp"))
+    exit
+
+# Create temp directory
+  nano = substr(sys2var( Exe["date"] " +\"%N\""), 1, 6)
+  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano "/" 
+  if(!mkdir(wm_temp)) {
+    stdErr("driver.awk: unable to create temp file " wm_temp)
+    exit
+  }
+
+# Save wikisource
+  print getwikisource(namewiki, "dontfollow") > wm_temp "article.txt"
+  close(wm_temp "article.txt")
+  stripfile(wm_temp "article.txt", "inplace")
+
+  command = Exe["cp"] " " shquote(wm_temp "article.txt") " " shquote(wm_temp "article.txt.2")
+  sys2var(command)
+
+# Save namewiki
+  print namewiki > wm_temp "namewiki.txt"
+  close(wm_temp "namewiki.txt")
+
+# Create index.temp entry (re-assemble when done with "project -j") 
+
+  print namewiki "|" wm_temp >> Project["indextemp"]
+  close(Project["indextemp"])
+
+# Run project and save result to /wm_temp/article.BotName.txt
+
+  stdErr("\n"namewiki"\n")
+
+  command = Exe[BotName] " -s " shquote(wm_temp "article.txt") " -n " shquote(namewiki) " -l " shquote(Project["meta"])
+  changes = sys2var(command)
+  if(changes) {
+    stdErr("    Found " changes " change(s) for " namewiki)
+    sendlog(Project["discovered"], namewiki, "")
+  }
+  else {
+    if(checkexists(wm_temp "article." BotName ".txt")) {
+      removefile(wm_temp "article." BotName ".txt")
+    }
+  }
+
+# Push changes to Wikipedia with 'wikiget -E'
+
+  if(checkexists(wm_temp "article." BotName ".txt") && dryrun == "y" && stopbutton() == "RUN" ) {
+    article = wm_temp "article." BotName ".txt"
+    summary = readfile(wm_temp "editsummary." BotName ".txt")
+    if(length(summary) < 5)
+      summary = "Edit by " BotName
+
+    command = "timeout 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l en"
+
+    printf("  startcommand - ")
+    result = sys2var(command)
+
+    if(result ~ /[Ss]uccess/) {
+      prnt("driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
+      print name >> Project["discovereddone"]
+      close(Project["discovereddone"])
+    }
+    else if(result ~ /[Nn]o[-][Cc]hange/ ) {
+      prnt("driver.awk: wikiget status: No change. " name)
+      print name >> Project["discoverednochange"]
+      close(Project["discoverednochange"])
+    }
+
+    else {  # Try 2
+
+      sleep(2)
+      printf("Try 2: " name " - ")
+      result = sys2var(command)
+
+      if(result ~ /[Ss]uccess/) {
+        prnt("driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
+        print name >> Project["discovereddone"]
+        close(Project["discovereddone"])
+      }
+      else if(result ~ /[Nn]o[-][Cc]hange/ ) {
+        prnt("driver.awk: wikiget status: No change. " name)
+        print name >> Project["discoverednochange"]
+        close(Project["discoverednochange"])
+      }
+      else {
+        prnt("driver.awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " name)
+        print name >> Project["discoverederror"]
+        close(Project["discoverederror"])
+      }
+    }
+  }
+
+}
+
+# 
+# Print and log messages
+# 
+function prnt(msg) {
+  if( length(msg) > 0 ) {
+    stdErr(msg)
+    print(strftime("%Y%m%d %H:%M:%S") " " msg) >> Home "driver.log"
+    close(Home "driver.log")
+  }
+}
+
+function usage() {
+
+  print ""
+  print "Driver - create data files and launch " BotName ".awk"
+  print ""
+  print "Usage:"        
+  print "       -p <project>   Project name. Optional, defaults to project.cfg"
+  print "       -n <name>      Name to process. Required"
+  print "       -d <y|n>       Dry run. '-d y' means push changes to Wikipedia."
+  print "       -h             Help"
+  print ""
+  print "Example: "
+  print "          driver -n \"Charles Dickens\" -p cb14feb16.001-100 -d y"
+  print ""
+}
+
+

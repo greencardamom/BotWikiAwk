@@ -1,0 +1,166 @@
+#!/bin/sh
+
+#
+# Setup for BotWikiAwk
+#
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2016-2018 by User:GreenC (at en.wikipedia.org)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+
+# Bootstrap GNU Awk 4.x +
+
+if [ $(command -v gawk) ]; then
+  awkn="gawk"
+else
+  awkn="awk"
+fi
+
+awkloc=$("$awkn" --version)
+substr="GNU Awk"
+
+# POSIX sub-string compare - is it GNU Awk? Is it not version 1-3?
+for s in "$awkloc"; do
+    if case ${s} in *"${substr}"*) true;; *) false;; esac; then
+        awkpath=$(command -v "$awkn")
+        if [ $("${awkpath}" -v s="$s" 'BEGIN {if(s ~ /GNU Awk [123]/) {print 0; exit}; print 1}') = 0 ]; then
+            echo "GNU Awk 4.x+ required"
+            awkpath=""
+        fi
+    else
+        echo "Unable to find GNU Awk in path, setup aborting.\n . Manually set hashbangs in *.awk (~/bin, ~/scripts (including clearlogs) and ~/skeleton)\n . Manually update Exe[] pathnames in ~/lib/botwiki.awk" 
+    fi
+done
+
+if [ -z "$awkpath" ]; then
+  exit
+fi
+
+# Load environment variables 
+"${awkpath}" -v awkpath="$awkpath" 'BEGIN {
+
+  c = split(ENVIRON["AWKPATH"], a, ":")
+  for(i = 1; i <= c; i++) {
+    if(a[i] ~ /BotWikiAwk/) {
+      inenv["awkpath"] = a[i]
+      break
+    }
+  }
+  c = split(ENVIRON["PATH"], a, ":")
+  for(i = 1; i <= c; i++) {
+    if(a[i] ~ /BotWikiAwk/) {
+      inenv["path"] = a[i]
+      break
+    }
+  }
+  if( length(inenv["awkpath"]) == 0 || length(inenv["path"]) == 0) {
+    print "Unable to find PATH and/or AWKPATH for BotWikiAwk. See setup instructions. Log-out/in."
+    exit
+  }
+  _SkipSetup = 1 # skip BEGIN{} section in library.awk
+}
+
+# Load library
+@include "library.awk"
+
+# Download wikiget, load manifest, set shebangs, create exe paths, create symlinks
+BEGIN {
+
+  sub(/lib\/?$/, "", inenv["awkpath"])
+  if(! chDir(inenv["awkpath"])) {
+    stdErr("setup.sh: Unable to change directory to " inenv["awkpath"])
+    exit
+  }
+
+ # download wikiget.awk
+  if(!sys2var(sprintf("command -v %s","wget")) {
+    stdErr("setup.sh: Unable to find 'wget' and can't download 'wikiget.awk' from GitHub. Install 'wikiget' manually in ~/bin")
+  }
+  else {
+    p = sys2var("wget -q -O- " shquote("https://raw.githubusercontent.com/greencardamom/Wikiget/master/wikiget.awk"))
+    if(!empty(p)) {
+      print p > "bin/wikiget.awk"
+      close("bin/wikiget.awk")
+    }
+    else 
+      stdErr("setup.sh: Unable to download 'wikiget.awk' from GitHub. Install manually in ~/bin")
+  }
+
+  manfp = readfile("manifest")
+  if(empty(manfp)) {
+    stdErr("setup.csh: Unable to find manifest")
+    exit
+  }
+  for(i = 1; i <= splitn(manfp, a, i); i++) {
+    delete b
+
+    botwikifile = "lib/botwiki.awk"
+
+   # set Exe[] paths
+    if(a[i] ~ /^dependencies/) {
+      fp = readfile(botwikifile)
+      if(fp !~ /\][ ]*[=][ ]*[.]{3,}/) 
+        continue
+      stdErr("\nSet Exe[] paths")
+      c = split(splitx(a[i], "[=]", 2), b, " ")
+      for(j = 1; j <= c; j++) {  
+        b[j] = strip(b[j])
+        p = sys2var(sprintf("command -v %s",b[j]))
+        re = "Exe\\[\"" b[j] "\"\\][ ]*[=][ ]*[.]{3,}"
+        if(! p) {
+          stdErr("  . Warning: Unable to find path for Exe[\"" b[j] "\"] in " botwikifile " - please add it manually")
+          sub(re, "Exe[\"" b[j] "\"] = ", fp)  
+        }
+        else {
+          if(sub(re, "Exe[\"" b[j] "\"] = " p, fp)) {
+            stdErr("  . Exe[\"" b[j] "\"] = " p)
+          }
+        }
+      }
+      print fp > botwikifile
+      close(botwikifile)
+    }
+
+   # set shebangs and create symlinks
+    else if(a[i] ~ /^awkbangs/) {
+      if(awkpath == "/usr/local/bin/gawk")
+        continue
+      stdErr("\nSet shebang to #!" awkpath)
+      c = split(splitx(a[i], "[=]", 2), b, " ")
+      for(j = 1; j <= c; j++) {
+        # create symlinks
+        if(b[j] !~ "scripts") {
+          if(! checkexists(splitx(b[j], ".", 1))) 
+            sys2var(Exe["ln"] " -t " splitx(b[j], "/", 1) " -s " splitx(b[j], "/", 2) " " splitx(splitx(b[j], "/", 2), ".", 1))
+        }
+        # set shebangs
+        fp = readfile(strip(b[j]) )
+        stdErr("  . " strip(b[j]) )
+        sub(/^[#][!]\/usr\/local\/bin\/awk/, "#!" awkpath, fp)
+        print fp > b[j]
+        close(b[j])
+      }      
+    }
+  }
+}'
+
+echo "\nSetup done."

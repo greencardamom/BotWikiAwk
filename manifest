@@ -1,0 +1,7 @@
+#
+# Setup manifest. Awk programs that require a hashbang; External dependencies
+#
+
+awkbangs = bin/bug.awk bin/driver.awk bin/makebot.awk bin/project.awk bin/runbot.awk bin/wikiget.awk skeleton/skeleton.awk scripts/cl.awk scripts/clearlogs
+dependencies = date mkdir rm sed tac timeout wget grep gzip mv cat diff cp head ls tail sort uniq zcat parallel touch wc chmod ln
+

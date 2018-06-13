@@ -1,0 +1,185 @@
+#!/usr/local/bin/gawk -bE
+
+#
+# Delete entries from log files
+#
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2016-2018 by User:GreenC (at en.wikipedia.org)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+@load "filefuncs"
+
+BEGIN {
+
+  N = ARGV[1]
+
+  logfiles = "discovered "
+
+  checkexists(N, "clearlogs", "exit")
+
+  c = split(logfiles, logs, " ")
+  for(i = 1; i <= c; i++) {
+    logs[i] = strip(logs[i])
+    if(checkexists(logs[i])) {
+      fp = ""
+      fp = sys2var("./cl.awk -n " N " -l " logs[i])
+      if(length(fp) > 0) {
+        print fp > logs[i]
+      }
+      else {
+        removefile(logs[i])
+        printf "" > logs[i]
+      }
+    }
+  }
+}
+
+# _______________________ UTILITIES __________________________
+
+# 
+# sys2var - run a system command and store result in a variable               
+# 
+#  . supports pipes inside command string
+#  . stderr is sent to null
+#  . if command fails (errno) return null
+# 
+#  Example:
+#     googlepage = sys2var("wget -q -O- http://google.com")
+# 
+function sys2var(command        ,fish, scale, ship) {
+
+         # command = command " 2>/dev/null"
+         while ( (command | getline fish) > 0 ) {
+             if ( ++scale == 1 )
+                 ship = fish
+             else
+                 ship = ship "\n" fish
+         }
+         close(command)
+         system("")
+         return ship
+}
+
+# 
+# checkexists - check file or directory exists.           
+#  
+#   . action = "exit" or "check" (default: check)
+#   . return 1 if exists, or exit if action = exit   
+#   . requirement: @load "filefuncs"
+# 
+function checkexists(file, program, action) {
+  if( ! exists(file) ) {
+    if( action == "exit" ) {
+      stdErr(program ": Unable to find/open " file)
+      print program ": Unable to find/open " file
+      system("")            
+      exit
+    }            
+    else
+      return 0
+  }
+  else
+    return 1
+}                  
+
+#           
+# exists - check for file existence
+#           
+#   . return 1 if exists, 0 otherwise.
+#   . requirement: @load "filefuncs"
+#
+function exists(name    ,fd) {
+    if ( stat(name, fd) == -1)
+      return 0
+    else
+      return 1
+}
+
+#           
+# stdErr - print s to /dev/stderr     
+#
+#  . if flag = "n" then no newline
+#
+function stdErr(s, flag) {    
+  if(flag == "n")
+    printf("%s",s) > "/dev/stderr"
+  else        
+    printf("%s\n",s) > "/dev/stderr"
+  close("/dev/stderr")
+}
+
+
+#           
+# strip - strip leading/trailing whitespace 
+#   
+#   . faster than gsub() or gensub() methods eg.
+#        gsub(/^[[:space:]]+|[[:space:]]+$/,"",s)
+#        gensub(/^[[:space:]]+|[[:space:]]+$/,"","g",s)
+#   
+#   Credit: https://github.com/dubiousjim/awkenough by Jim Pryor 2012
+# 
+function strip(str) {
+    if (match(str, /[^ \t\n].*[^ \t\n]/))
+        return substr(str, RSTART, RLENGTH)
+    else if (match(str, /[^ \t\n]/))            
+        return substr(str, RSTART, 1)
+    else       
+        return ""
+}
+
+# 
+# removefile - delete a file
+# 
+#   . rm options can be passed in 'opts'
+# 
+#   Requirement: 'rm' in path
+#              
+function removefile(str,opts) {
+      close(str) 
+      if( checkexists(str) )
+        sys2var(  "rm " opts " -- " shquote(str) )
+      if( checkexists(str) ) {
+        stdErr("Error: unable to delete " str ", aborting.")
+        exit
+      }            
+      system("") # Flush buffer
+}           
+
+
+#           
+# shquote - make string safe for shell                
+# 
+#  . alternate is shell_quote.awk in /usr/local/share/awk which uses '"' instead of \'
+#
+#  Example:    
+#     print shquote("Hello' There")    produces 'Hello'\'' There'
+#     echo 'Hello'\'' There'           produces Hello' There
+# 
+function shquote(str,  safe) {
+        safe = str
+        gsub(/'/, "'\\''", safe)        
+        gsub(/’/, "'\\’'", safe)
+        return "'" safe "'"
+}              
+
+
+
