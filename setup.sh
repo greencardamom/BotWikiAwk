@@ -35,6 +35,9 @@ else
   awkn="awk"
 fi
 
+# Optional: add a hardcoded path to awk
+#  awkpath="/data/project/local/bin/gawk"
+
 awkloc=$("$awkn" --version)
 substr="GNU Awk"
 
@@ -125,11 +128,9 @@ fi
       stdErr("setup.sh: Unable to download wikiget.awk from GitHub. Install manually in ~/bin")
   }
 
-  PROCINFO["sorted_in"] = "@ind_str_asc"
-
   manfp = readfile("manifest")
   if(empty(manfp)) {
-    stdErr("setup.csh: Unable to find manifest")
+    stdErr("setup.sh: Unable to find manifest")
     exit
   }
   s = splitn(manfp, a)
