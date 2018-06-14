@@ -29,17 +29,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# get bot name
 BEGIN {
+
+  # Get bot name from cwd
   delete _pwdA
   _pwdC = split(ENVIRON["PWD"],_pwdA,"/")
   BotName = _pwdA[_pwdC]
 
+  # Settings
   _engine = 0  # 0 = GNU parallel
                # 1 = Toolforge grid
 
-  _delay = "0.5"  # parallel delay between each worker startup
-  _procs = "20"   # max number of parallel workers at a time
+  _delay = "0.5"      # GNU parallel: delay between each worker startup
+  _procs = "20"       # GNU parallel: max number of parallel workers at a time
+  _griddelay = "1"    # Toolforge grid: delay between each worker startup
 
 }
 
@@ -48,28 +51,34 @@ BEGIN {
 
 BEGIN {
 
-  dateb = sys2var("date +'%s'")
-
   if(ARGC < 3) {
     print "Runbot - run the bot"
-    print "\n\tUsage: runbot <pid> <filename>"
+    print "\n\tUsage: runbot <pid> <filename> <dryrun>"
     print "\n\tExample: runbot accdate20180101.001-900 auth\n"
+    print "\n\t         runbot accdate20180101.001-900 auth dry\n"
     exit
   }
 
-  pid = ARGV[1]
-  fid = ARGV[2]
+  setProject(ARGV[1])     # library.awk .. load Project[] paths via project.cfg
+                          # if -p not given, use default noted in project.cfg
 
-  setProject(pid)     # library.awk .. load Project[] paths via project.cfg
-                      # if -p not given, use default noted in project.cfg
+  main(strip(ARGV[1]),strip(ARGV[2]),strip(ARGV[3]))
 
-  if(! checkexe(Exe["parallel"], "parallel") || ! checkexe(Exe["driver"], "driver") || ! checkexe(Exe["mv"], "mv") || ! checkexe(Exe["project"], "project") || ! checkexe(Exe["date"], "date") || ! checkexe(Exe["wc"], "wc") )
+}
+
+function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,acount,avgsec) {
+
+  if(_engine == 0 && ! checkexe(Exe["parallel"], "parallel"))
+    exit
+  if(! checkexe(Exe["driver"], "driver") || ! checkexe(Exe["mv"], "mv") || ! checkexe(Exe["project"], "project") || ! checkexe(Exe["date"], "date") )
     exit
   checkexists(Project["meta"] fid, "runbot.awk checkexists()", "exit")
   checkexists(Project["meta"] "cl.awk", "runbot.awk checkexists()", "exit")
   checkexists(Project["meta"] "clearlogs", "runbot.awk checkexists()", "exit")
 
-  if(ARGV[3] ~ /dry/)   # Dry run. "y" = push changes to Wikipedia.
+  dateb = sys2var(Exe["date"] " +'%s'")
+
+  if(dry ~ /dry/)       # Dry run. "y" = push changes to Wikipedia.
     drymode = "n"
   else
     drymode = "y"
@@ -98,8 +107,12 @@ BEGIN {
     close(command)
   }
   else if(_engine == 1) {
+    _delay = _griddelay
+    if(!checkexists(Project["meta"] "gridlog"))
+      mkdir(Project["meta"] "gridlog")
     gridfire(Project["meta"] fid, drymode, pid)
     gridwatch()
+    gridlog(fid)
   }
 
   # ./project -j -p $1
@@ -113,7 +126,6 @@ BEGIN {
     sys2var(Exe["mv"] " " shquote(Project["meta"] "index.temp") " " shquote(Project["meta"] "index.temp." fid) )
 
   bell()
-
   sleep(1)
 
   datee = sys2var(Exe["date"] " +'%s'")
@@ -124,24 +136,69 @@ BEGIN {
 
 }
 
-function gridfire(auth, drymode, pid,  i,a) {
+#
+# gridfire - start driver.awk workers on the grid with _delay between each startup
+#
+function gridfire(auth, drymode, pid,    i,a,command) {
 
   for(i = 1; i <= splitn(auth, a, i); i++) {
-    command = "jsub -N tools.botwikiawk-" BotName "-" i " -once " Exe["driver"] " -d " drymode " -p " pid " -n " shquote(a[i])
+    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -d " drymode " -p " pid " -n \"" shquote(a[i]) "\""
+    print command
     sys2var(command)
-    sleep(1, "unix")
+    sleep(_delay, "unix")
   }
 }
 
-function gridwatch() {
-
+#
+# gridwatch - monitor qstat until workers are finished
+#
+function gridwatch(  op) {
   while(1) {
     op = sys2var("qstat")
-    print op
     if(empty(op))
       break
-    sleep(10, "unix")
+    print "\nList of processes still running on grid ..."
+    print op
+    sleep(5, "unix")
   }
+}
+
+#
+# gridlog - concat grid log files into single file
+#
+function gridlog(fid,  cwd,a,b,i,j,logname) {
+
+  cwd = ENVIRON["PWD"]
+  if(! chDir(Project["meta"] "gridlog")) {
+    stdErr("runbot.awk: Unable to change dir to " Project["meta"] "gridlog")
+    exit
+  }
+
+  # generate log name incrimenting number ie. auth-runbot-1.log .. auth-runbot-2.log etc..
+  if(checkexists(fid "-runbot-1.log")) {
+    delete b
+    for(i = 1; i <= splitn(sys2var(Exe["ls"] " " fid "*") "\n", a, i); i++)
+      b[splitx(splitx(a[i], "[.]", 1), "[-]", 3)] = a[i]
+    PROCINFO["sorted_in"] = "@ind_num_desc"
+    for(j in b) {
+      logname = fid "-runbot-" int(j + 1) ".log"
+      break
+    }
+  }
+  else
+    logname = fid "-runbot-1.log"
+
+  # create log file
+  delete a
+  delete b
+  for(i = 1; i <= splitn(sys2var(Exe["ls"] " tool*") "\n", a, i); i++)
+    b[splitx(a[i], "[.]", 3)] = a[i]
+  PROCINFO["sorted_in"] = "@ind_str_asc"
+  for(j in b) {
+    print readfile2(b[j]) >> logname
+    removefile(b[j])
+  }
+  chDir(cwd)
 
 }
 
