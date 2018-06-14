@@ -46,7 +46,7 @@ BEGIN {
       break
 
     default:                                                  # Default both paths
-      Home = "/home/adminuser/BotWikiBot/bots/" BotName "/"  
+      Home = "/home/adminuser/BotWikiAwk/bots/" BotName "/"  
       Agent = UserPage " (ask me about " BotName ")"
       break
   }  
