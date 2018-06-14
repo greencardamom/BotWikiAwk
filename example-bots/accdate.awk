@@ -310,7 +310,7 @@ function getstatus(tls,arg,   statusidx,argidx,argre,dest,re,dest2) {
       G[argidx] = "exists"
       re = "[|]" ReSpace argre ReSpace "[=]" ReSpace
       if(match(dest[0], re, dest2)) {
-        if(empty(uriparseElement(strip(gsubs(dest2[0],"",dest[0])), "netloc"))) { # no discernable domain name in url field
+        if(empty(urlElement(strip(gsubs(dest2[0],"",dest[0])), "netloc"))) { # no discernable domain name in url field
           if(! istemplate(dest[0]))                                               # URL not templated
             G[statusidx] = "no"
         }

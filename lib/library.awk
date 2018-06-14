@@ -38,7 +38,48 @@
 #  . Wikipedia markup
 #  . Numbers
 #  . URL Encode/Decode
+#
 
+# BEGIN {
+
+  # The library has dependencies on external programs (eg. 'rm')
+  # library.awk uses the global array Exe[] to hold path/filenames
+  #   eg. Exe["rm"] = "/bin/rm"
+  #  
+  # Exe[] can be pre-defined statically here or for example botwiki.awk
+  #   eg.
+  #    Exe["rm"]    = "/bin/rm"
+  #    Exe["mkdir"] = "/bin/mkdir"
+  #    ...
+  #
+  # Or, the below code will create Exe[] using 'which rm' to determine the paths.
+  # If Exe[] is already defined (ie. static method) it will leave Exe[] alone.
+  # Either way, the below will check if Exe[] has been defined for programs
+  # used in this library, and abort if not.
+  #
+
+  #if(_SkipSetup != 1) {  # skip if called by setup.sh
+
+  #  _libraryawkPrograms = "wget date timeout sed tac rm mkdir"
+
+  #  Exe["_empty"]
+  #  if( length(Exe) < 2) {
+  #    delete Exe
+  #    spliti(_libraryawkPrograms, Exe, " ")
+  #  }
+  #  else
+  #    _libraryawkExeDefined = 1
+  #  for(_libraryawkI in Exe) {
+  #    if(_libraryawkI == "_empty") continue
+  #    if(! _libraryawkExeDefined)
+  #      Exe[_libraryawkI] = sys2var("which " _libraryawkI)
+  #    if( empty(Exe[_libraryawkI])) {
+  #      print "library.awk: Unable to find '" _libraryawkI "' in path"
+  #      exit
+  #    }
+  #  }
+  # }
+  # }
 
 # [[ __________________________________________________________________________________ ]]
 # [[ __________________ Files and dirs ________________________________________________ ]]
@@ -207,7 +248,7 @@ function filesize(name         ,fd) {
 #           awk '{ LINES=LINES $0 "\n"; } /./ { printf "%s", LINES; LINES=""; }' input.txt | sed '/./,$\!d' > output.txt   
 #
 #   Requirement: Exe["tac"]
-#   Requirement: Exe["sed"]
+#                Exe["sed"]
 #
 function stripfile(filen, type,    fp) {
   
@@ -215,7 +256,7 @@ function stripfile(filen, type,    fp) {
         stdErr("stripfile(): Unable to find " filen)
         return 
     }
-    if ( ! checkexe(Exe["rm"], "rm") || ! checkexe(Exe["tac"], "tac") || ! checkexe(Exe["sed"], "sed"))
+    if ( ! checkexe(Exe["tac"], "tac") || ! checkexe(Exe["sed"], "sed"))
         return filen
 
     # tac 'file' | sed -e '/./,$!d' | tac | sed -e '/./,$!d'
@@ -1328,27 +1369,46 @@ function isafraction(str,    safe) {
 #       "python3 -c \"from urllib.parse import urlsplit; import sys; o = urlsplit(sys.argv[1]); print(o." element ")\" " shquote(url)
 #   . returns full url on error
 #
-function urlElement(url,element,   a) {
+function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path) {
 
-    match(url, /^([^:]+):\/\/([^/]+)\/([^?]+)\?([^#]+)#(.*)/, a)
-    switch (element) {
-        case "scheme":
-            return a[1]
-            break   
-        case "netloc":
-            return a[2]
-            break   
-        case "path":
-            return a[3]
-            break   
-        case "query":
-            return a[4]
-            break   
-        case "fragment":
-            return a[5]
-            break   
-    }
-    return url
+  if(url ~ /^\/\//)        # Protocol-relative - assume http
+    url = "http:" url
+
+  split(url, a, /\//)
+
+  scheme = substr(a[1], 0, index(a[1], ":") -1)
+  netloc = a[3]
+
+  tail = subs(scheme "://" netloc, "", url)
+
+  splits(tail, b, "#")
+  if(!empty(b[2]))
+    fragment = b[2]
+
+  splits(tail, b, "?")
+  if(!empty(b[2])) {
+    query = b[2]
+    if(!empty(fragment))
+      query = subs("#" fragment, "", query)
+  }
+
+  path = tail
+  if(!empty(fragment))
+    path = subs("#" fragment, "", path)
+  if(!empty(query))
+    path = subs("?" query, "", path)
+    
+  if(element == "scheme")
+    return scheme
+  else if(element == "netloc")
+    return netloc
+  else if(element == "path")
+    return path
+  else if(element == "query")
+    return query
+  else if(element == "fragment")
+    return fragment
+
 }
 
 #

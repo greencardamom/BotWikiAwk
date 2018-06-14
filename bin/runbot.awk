@@ -34,15 +34,19 @@ BEGIN {
   delete _pwdA
   _pwdC = split(ENVIRON["PWD"],_pwdA,"/")
   BotName = _pwdA[_pwdC]
+
+  _engine = 0  # 0 = GNU parallel
+               # 1 = Toolforge grid
+
+  _delay = "0.5"  # parallel delay between each worker startup
+  _procs = "20"   # max number of parallel workers at a time
+
 }
 
 @include "botwiki.awk"
 @include "library.awk"
 
 BEGIN {
-
-  delay = "0.5"  # delay between each proc startup
-  procs = "10"   # number of procs to run in parallel
 
   dateb = sys2var("date +'%s'")
 
@@ -64,9 +68,9 @@ BEGIN {
   checkexists(Project["meta"] fid, "runbot.awk checkexists()", "exit")
   checkexists(Project["meta"] "cl.awk", "runbot.awk checkexists()", "exit")
   checkexists(Project["meta"] "clearlogs", "runbot.awk checkexists()", "exit")
- 
+
   if(ARGV[3] ~ /dry/)   # Dry run. "y" = push changes to Wikipedia.
-    drymode = "n" 
+    drymode = "n"
   else
     drymode = "y"
 
@@ -76,21 +80,28 @@ BEGIN {
     exit
   }
   sys2var("./clearlogs " fid)
-  chDir(cwd)  
+  chDir(cwd)
 
-  # parallel -a meta/$1/$2 -r --delay 0.5 --trim lr -k -j 10 ./driver -d n -p $1 -n {}
-  command = Exe["parallel"] " -a " Project["meta"] fid " -r --delay " delay " --trim lr -k -j " procs " " Exe["driver"] " -d " drymode " -p " pid " -n {}"
+  if(_engine == 0) {
 
-  while ( (command | getline fish) > 0 ) {
-    if ( ++scale == 1 )     {
-      print fish
+    # parallel -a meta/$1/$2 -r --delay 0.5 --trim lr -k -j 10 ./driver -d n -p $1 -n {}
+    command = Exe["parallel"] " -a " Project["meta"] fid " -r --delay " _delay " --trim lr -k -j " _procs " " Exe["driver"] " -d " drymode " -p " pid " -n {}"
+
+    while ( (command | getline fish) > 0 ) {
+      if ( ++scale == 1 )     {
+        print fish
+      }
+      else     {
+        print "\n" fish
+      }
     }
-    else     {   
-      print "\n" fish      
-    }
+    close(command)
   }
-  close(command)
-  
+  else if(_engine == 1) {
+    gridfire(Project["meta"] fid, drymode, pid)
+    gridwatch()
+  }
+
   # ./project -j -p $1
   command = Exe["project"] " -j -p " pid
   sys2var(command)
@@ -98,7 +109,7 @@ BEGIN {
   sleep(1)
 
   # mv meta/$1/index.temp meta/$1/index.temp.$2
-  if(checkexists(Project["meta"] "index.temp" )) 
+  if(checkexists(Project["meta"] "index.temp" ))
     sys2var(Exe["mv"] " " shquote(Project["meta"] "index.temp") " " shquote(Project["meta"] "index.temp." fid) )
 
   bell()
@@ -107,8 +118,30 @@ BEGIN {
 
   datee = sys2var(Exe["date"] " +'%s'")
   datef = (datee - dateb)
-  acount = sys2var(Exe["wc"] " -l " shquote(Project["meta"] fid) " | awk '{print $1}'")
+  acount = splitn(Project["meta"] fid, a)
   avgsec = datef / acount
-  print "\nProcessed " acount " articles in " (datef / 60) " minutes. Avg " (datef / acount) " sec each (delay = " delay "sec ; procs = " procs  ")"
+  print "\nProcessed " acount " articles in " (datef / 60) " minutes. Avg " (datef / acount) " sec each (delay = " _delay "sec ; procs = " _procs  ")"
 
 }
+
+function gridfire(auth, drymode, pid,  i,a) {
+
+  for(i = 1; i <= splitn(auth, a, i); i++) {
+    command = "jsub -N tools.botwikiawk-" BotName "-" i " -once " Exe["driver"] " -d " drymode " -p " pid " -n " shquote(a[i])
+    sys2var(command)
+    sleep(1, "unix")
+  }
+}
+
+function gridwatch() {
+
+  while(1) {
+    op = sys2var("qstat")
+    print op
+    if(empty(op))
+      break
+    sleep(10, "unix")
+  }
+
+}
+

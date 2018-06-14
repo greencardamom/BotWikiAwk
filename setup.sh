@@ -134,7 +134,7 @@ fi
 
   # set default path
   fp = readfile(botwikifile)
-  if(sub(/Home[ ]*[=][ ]*\"\/home\/adminuser\/BotWikiAwk\/bots\//, "Home = \"" inenv["awkpath"] "bots/", fp) {
+  if(sub(/Home[ ]*[=][ ]*\"\/home\/adminuser\/BotWikiAwk\/bots\//, "Home = \"" inenv["awkpath"] "bots/", fp)) {
     print fp > botwikifile
     close(botwikifile)
   }
