@@ -89,6 +89,9 @@ BEGIN {
         stdErr("makebot.awk: Error: unable to create " ARGV[1] "/scripts")
         exit
       }
+
+      makeprojcfg()
+
     }
     else {
       stdErr("makebot.awk: Error: unable to create " ARGV[1])
@@ -120,6 +123,19 @@ function getskeletonname(  resp) {
   if(resp == 2) 
     return "templates"
   return "bones"  
+
+}
+
+function makeprojcfg() {
+
+  print "# Default project name" > ARGV[1] "/project.cfg"
+  print "default.id = " >> ARGV[1] "/project.cfg"
+  print "# Default directories" >> ARGV[1] "/project.cfg"
+  print "default.data = " ARGV[1] "/data/" >> ARGV[1] "/project.cfg"
+  print "default.meta = " ARGV[1] "/meta/" >> ARGV[1] "/project.cfg"
+  print "# For each project, create a .data and .meta line" >> ARGV[1] "/project.cfg"
+  print "" >> ARGV[1] "/project.cfg"
+  close(ARGV[1] "/project.cfg")
 
 }
 

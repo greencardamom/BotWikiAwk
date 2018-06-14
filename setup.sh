@@ -124,6 +124,7 @@ fi
     if(!empty(p)) {
       print p > "bin/wikiget.awk"
       close("bin/wikiget.awk")
+      sys2var("chmod 700 bin/wikiget.awk")
     }
     else 
       stdErr("setup.sh: Unable to download wikiget.awk from GitHub. Install manually in ~/bin")
@@ -132,7 +133,6 @@ fi
   botwikifile = "lib/botwiki.awk"
 
   # set default path
-  print inenv["awkpath"]
   fp = readfile(botwikifile)
   fp2 = subs("Home = \"/home/adminuser/BotWikiBot/bots/", "Home = \"" inenv["awkpath"] "bots/", fp)
   if(fp != fp2) {

@@ -34,7 +34,7 @@ BEGIN {
   StopButton = "https://en.wikipedia.org/wiki/User:name/button"
 
   # 2. User page - your user page
-  UserPage = "http://en.wikipedia.org/wiki/User:name
+  UserPage = "http://en.wikipedia.org/wiki/User:name"
 
   # 3. Paths and agent
   #  . BotName defined in the BEGIN{} section of calling programs (bug, driver, project etc)
