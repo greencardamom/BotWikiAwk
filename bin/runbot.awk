@@ -115,10 +115,14 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
     gridlog(fid)
   }
 
+  system("")
+  sleep(1)
+
   # ./project -j -p $1
   command = Exe["project"] " -j -p " pid
   sys2var(command)
 
+  system("")
   sleep(1)
 
   # mv meta/$1/index.temp meta/$1/index.temp.$2
@@ -126,7 +130,6 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
     sys2var(Exe["mv"] " " shquote(Project["meta"] "index.temp") " " shquote(Project["meta"] "index.temp." fid) )
 
   bell()
-  sleep(1)
 
   datee = sys2var(Exe["date"] " +'%s'")
   datef = (datee - dateb)

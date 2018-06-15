@@ -1,4 +1,4 @@
-#!/usr/local/bin/gawk -E
+#!/usr/local/bin/gawk -bE
 
 #
 # Delete entries from a logfile based on a list of names in namefile

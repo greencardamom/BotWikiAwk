@@ -1456,7 +1456,7 @@ function urlencodeawk(str,class,  c, len, res, i, ord, re) {
     if (class == "url")
         re = "[$\\-_.+!*'(),,;/?:@=&0-9A-Za-z]"
     else if (class == "rawphp")
-        re = "[\\-_.0-9A-Za-z]"
+        re = "[\\-_.~0-9A-Za-z]"
     else
         re = "[0-9A-Za-z]"
 
