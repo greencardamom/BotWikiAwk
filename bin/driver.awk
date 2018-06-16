@@ -20,7 +20,7 @@
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,         
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
@@ -43,7 +43,7 @@ BEGIN {
   }
 
   Optind = Opterr = 1
-  while ((C = getopt(ARGC, ARGV, "hd:p:n:")) != -1) {
+  while ((C = getopt(ARGC, ARGV, "hd:p:n:a:m:")) != -1) {
       opts++
       if(C == "p")                 #  -p <project>   Use project name. Default in project.cfg
         pid = verifypid(Optarg)
@@ -51,6 +51,8 @@ BEGIN {
         namewiki = verifyval(Optarg)
       if(C == "d")                 #  -d <y|n>       Dry run. "y" = push changes to Wikipedia.
         dryrun = verifyval(Optarg)
+      if(C == "a")                 #  -a <filename>  Optional auth filename if running via Toolforge
+        authfile = verifyval(Optarg)
 
       if(C == "h") {
         usage()
@@ -64,14 +66,23 @@ BEGIN {
   }
 
 # library.awk .. load Project[] paths via project.cfg
-  setProject(pid)    
+  setProject(pid)
 
   if( ! checkexe(Exe["wikiget"], "wikiget") || ! checkexe(Exe["date"], "date") || ! checkexe(Exe["cp"], "cp"))
     exit
 
+# Running on Toolforge grid with job-array
+  if(namewiki == "_gridarray") {
+    namewiki = jobarray(authfile)
+    if(empty(namewiki)) {
+      stdErr("driver.awk: unable to deterime namewiki from job-array")
+      exit
+    }
+  }
+
 # Create temp directory
   nano = substr(sys2var( Exe["date"] " +\"%N\""), 1, 6)
-  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano "/" 
+  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano "/"
   if(!mkdir(wm_temp)) {
     stdErr("driver.awk: unable to create temp file " wm_temp)
     exit
@@ -89,13 +100,15 @@ BEGIN {
   print namewiki > wm_temp "namewiki.txt"
   close(wm_temp "namewiki.txt")
 
-# Create index.temp entry (re-assemble when done with "project -j") 
+# Create index.temp entry (re-assemble when done with "project -j")
 
   print namewiki "|" wm_temp >> Project["indextemp"]
   close(Project["indextemp"])
 
 # Run project and save result to /wm_temp/article.BotName.txt
 
+  # This stderr is required when running on Toolforge so it can monitor when the job-array is complete
+  # Good idea in general, anyway, to monitor when a worker is complete.
   stdErr("\n"namewiki"\n")
 
   command = Exe[BotName] " -s " shquote(wm_temp "article.txt") " -n " shquote(namewiki) " -l " shquote(Project["meta"])
@@ -160,9 +173,9 @@ BEGIN {
 
 }
 
-# 
+#
 # Print and log messages
-# 
+#
 function prnt(msg) {
   if( length(msg) > 0 ) {
     stdErr(msg)
@@ -171,20 +184,35 @@ function prnt(msg) {
   }
 }
 
+#
+# Return wikiname in auth file coresponding to ENVIRON["SGE_TASK_ID"] set by job-array in runbot.awk
+#
+function jobarray(authfile) {
+
+  if(empty(ENVIRON["SGE_TASK_ID"]))
+    return
+  if( ! checkexe(Exe["tail"], "tail") || ! checkexe(Exe["head"], "head") )
+    return
+
+  # Quickest method
+  command = Exe["tail"] " -n +" ENVIRON["SGE_TASK_ID"] " " authfile " | " Exe["head"] " -n 1"
+  return sys2var(command)
+}
+
 function usage() {
 
   print ""
   print "Driver - create data files and launch " BotName ".awk"
   print ""
-  print "Usage:"        
+  print "Usage:"
   print "       -p <project>   Project name. Optional, defaults to project.cfg"
   print "       -n <name>      Name to process. Required"
   print "       -d <y|n>       Dry run. '-d y' means push changes to Wikipedia."
+  print "       -a <authfile>  Optional auth filename if running via Toolforge"
   print "       -h             Help"
   print ""
   print "Example: "
   print "          driver -n \"Charles Dickens\" -p cb14feb16.001-100 -d y"
   print ""
 }
-
 

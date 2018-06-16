@@ -42,7 +42,6 @@ BEGIN {
 
   _delay = "0.5"      # GNU parallel: delay between each worker startup
   _procs = "20"       # GNU parallel: max number of parallel workers at a time
-  _griddelay = "1"    # Toolforge grid: delay between each worker startup
 
 }
 
@@ -66,7 +65,7 @@ BEGIN {
 
 }
 
-function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,acount,avgsec) {
+function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,acount,avgsec,jidjs,jobid,jobsize) {
 
   if(_engine == 0 && ! checkexe(Exe["parallel"], "parallel"))
     exit
@@ -107,12 +106,14 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
     close(command)
   }
   else if(_engine == 1) {
-    _delay = _griddelay
-    if(!checkexists(Project["meta"] "gridlog"))
-      mkdir(Project["meta"] "gridlog")
-    gridfire(Project["meta"] fid, drymode, pid)
-    gridwatch()
-    gridlog(fid)
+    if (!checkexists(Project["meta"] "gridlog"))
+        mkdir(Project["meta"] "gridlog")
+    jidjs = gridfire(Project["meta"] fid, drymode, pid)
+    jobsize = splitx(jidjs, "[|]", 1)
+    jobid = splitx(jidjs, "[|]", 2)
+    gridwatch(jobid)
+    gridlog(fid, jobid, pid, jobsize)
+    print "Job completed."
   }
 
   system("")
@@ -135,41 +136,72 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
   datef = (datee - dateb)
   acount = splitn(Project["meta"] fid, a)
   avgsec = datef / acount
-  print "\nProcessed " acount " articles in " (datef / 60) " minutes. Avg " (datef / acount) " sec each (delay = " _delay "sec ; procs = " _procs  ")"
-
+  printf "\nProcessed " acount " articles in " (datef / 60) " minutes. Avg " (datef / acount) " sec each"
+  if(_engine == 0)
+    print " (delay = " _delay "sec ; procs = " _procs  ")"
+  else if(_engine == 1)
+    print
 }
 
 #
-# gridfire - start driver.awk workers on the grid with _delay between each startup
+# gridfire - start driver.awk workers on the grid using a qsub -t job-array
 #
-function gridfire(auth, drymode, pid,    i,a,command) {
+function gridfire(auth, drymode, pid,   driver,procname,logdir,jobsize,command,op,a) {
 
-  for(i = 1; i <= splitn(auth, a, i); i++) {
-    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -d " drymode " -p " pid " -n \"" shquote(a[i]) "\""
-    print command
-    sys2var(command)
-    sleep(_delay, "unix")
+  driver = sys2var("readlink -f `which " Exe["driver"] "`")
+  procname = "tools.botwikiawk-" pid
+  logdir = Project["meta"] "gridlog"
+  jobsize = splitn(auth,a)
+  if(empty(jobsize) || jobsize < 1 ) {
+    stdErr("runbot.awk: unable to determine size of auth file " auth)
+    exit
+  }
+  if(!empty(driver)) {
+
+    # standard settings found in /usr/bin/jsub plus the -t job-array, -j y, and -cwd .. need -once?
+    # /usr/bin/qsub -t 1-5:1 -j y -o /data/project/botwikiawk/BotWikiAwk/bots/accdate/meta/accdate20180614.0001-0010/gridlog -M tools.botwikiawk@tools.wmflabs.org -N test3 -hard -l h_vmem=524288k -l release=trusty -q task -b yes /mnt/nfs/labstore-secondary-tools-project/botwikiawk/BotWikiAwk/bots/accdate/test.awk
+
+    command = "/usr/bin/qsub -t 1-" jobsize ":1 -j y -o " logdir " -M tools.botwikiawk@tools.wmflabs.org -N " procname " -hard -l h_vmem=524288k -l release=trusty -cwd -q task -b yes " driver " -d " shquote(drymode) " -p " shquote(pid) " -n _gridarray -a " shquote(auth)
+
+    # Your job-array 432577.1-5:1 ("test3") has been submitted
+    op = sys2var(command)
+    if(op ~ /has been submitted/)
+      return jobsize "|" strip(splitx(splitx(op, "[.]", 1), "[ ]", 3))
+    else {
+      stdErr("runbot.awk: Unable to submit job. Returned message: " op)
+      exit
+    }
+  }
+  else {
+    stdErr("runbot.awk: unable to find driver.awk")
+    exit
   }
 }
 
 #
 # gridwatch - monitor qstat until workers are finished
 #
-function gridwatch(  op) {
+function gridwatch(jid,  op,re) {
+
+  print "Job-array " jid " submitted."
+
+  re = "^[ ]" jid
   while(1) {
     op = sys2var("qstat")
     if(empty(op))
       break
-    print "\nList of processes still running on grid ..."
-    print op
-    sleep(5, "unix")
+    if(op ~ re)
+      sleep(5, "unix")
+    else
+      break
   }
 }
 
 #
 # gridlog - concat grid log files into single file
 #
-function gridlog(fid,  cwd,a,b,i,j,logname) {
+function gridlog(fid,jid,pid,jobsize,   cwd,a,b,c,fn,i,j,z,logname) {
+
 
   cwd = ENVIRON["PWD"]
   if(! chDir(Project["meta"] "gridlog")) {
@@ -178,10 +210,13 @@ function gridlog(fid,  cwd,a,b,i,j,logname) {
   }
 
   # generate log name incrimenting number ie. auth-runbot-1.log .. auth-runbot-2.log etc..
+
   if(checkexists(fid "-runbot-1.log")) {
     delete b
+
     for(i = 1; i <= splitn(sys2var(Exe["ls"] " " fid "*") "\n", a, i); i++)
       b[splitx(splitx(a[i], "[.]", 1), "[-]", 3)] = a[i]
+
     PROCINFO["sorted_in"] = "@ind_num_desc"
     for(j in b) {
       logname = fid "-runbot-" int(j + 1) ".log"
@@ -191,15 +226,39 @@ function gridlog(fid,  cwd,a,b,i,j,logname) {
   else
     logname = fid "-runbot-1.log"
 
-  # create log file
+
+  printf "Waiting on " jobsize " workers "
+
+ # monitor logs - this can deadlock so it's important driver.awk output something to stderr
+ #                for each worker even when it does nothing else - such as the wikiname processed
+
+ #      tools.botwikiawk-accdate20180614.0001-0010.o436955.1
+  fn = "tools.botwikiawk-" pid ".o" jid "." jobsize  # wait for last worker
+  delete a
+  while(1) {
+    if(checkexists(fn)) {
+      c = splitn(sys2var(Exe["ls"] " tool*") "\n", a)
+      if(c == jobsize)
+        break
+    }
+    sleep(5, "unix")
+    printf "."
+  }
+
+  print "\nCreating log " Project["meta"] "gridlog/" logname
+
+ # aggregate log files into one, remove individuals
+
   delete a
   delete b
-  for(i = 1; i <= splitn(sys2var(Exe["ls"] " tool*") "\n", a, i); i++)
-    b[splitx(a[i], "[.]", 3)] = a[i]
-  PROCINFO["sorted_in"] = "@ind_str_asc"
+
+  for(i = 1; i <= splitn(sys2var(Exe["ls"] " tools.*") "\n", a, i); i++)
+    b[splitx(subs("-" pid, "", a[i]), "[.]", 4)] = a[i]
+
+  PROCINFO["sorted_in"] = "@ind_num_asc"
   for(j in b) {
     print readfile2(b[j]) >> logname
-    removefile(b[j])
+    removefile2(b[j])
   }
   chDir(cwd)
 
