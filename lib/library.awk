@@ -725,6 +725,19 @@ function unpatsplit(field,sep,   c,output,debug) {
 }
 
 #
+# tup() - tool to allow functions to return multiple values like a proto-tuple
+#
+#   . 'f' should be multiple values seperated by SUBSEP
+#
+#   Example: tup(splitup(), a) => a[2] == "world"           
+#            function splitup() { return "hello" SUBSEP "world" }
+#
+function tup(f, a) {
+  delete a
+  return split(f, a, SUBSEP)
+}
+
+#
 # strip() - strip leading/trailing whitespace
 #
 #   . faster than the gsub() or gensub() methods eg.
@@ -1111,6 +1124,14 @@ function splitn(fp, arrSP, counter, start,    c,j,dSP,i) {
     return length(dSP)
 
 }
+
+#
+# wc() - wc a file (number of lines)
+#
+#    . to wc a string splitc(s, "\n")
+#    . to wc an array length(a)
+#
+function wc(fp,  a) { return splitn(fp,a) }
 
 #
 # sortstring() - given a string, return the characters in a sorted_in 'order'

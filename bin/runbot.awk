@@ -36,12 +36,15 @@ BEGIN {
   _pwdC = split(ENVIRON["PWD"],_pwdA,"/")
   BotName = _pwdA[_pwdC]
 
-  # Settings
-  _engine = 0  # 0 = GNU parallel
-               # 1 = Toolforge grid
+  # Multitasking engine method
+  _engine = 2  # 0 = GNU parallel (for single computer with multi-core CPU)
+               # 1 = Toolforge grid job-array (fast/huge! use with caution if doing outside network requests)
+               # 2 = Toolforge grid jsub (adjustable speed 1 worker every x seconds)
 
+  # Engine settings
   _delay = "0.5"      # GNU parallel: delay between each worker startup
   _procs = "20"       # GNU parallel: max number of parallel workers at a time
+  _griddelay = "0.5"  # Toolforge grid: jsub delay between each worker startup
 
 }
 
@@ -65,7 +68,7 @@ BEGIN {
 
 }
 
-function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,acount,avgsec,jidjs,jobid,jobsize) {
+function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,acount,avgsec,jsjid) {
 
   if(_engine == 0 && ! checkexe(Exe["parallel"], "parallel"))
     exit
@@ -108,12 +111,18 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
   else if(_engine == 1) {
     if (!checkexists(Project["meta"] "gridlog"))
         mkdir(Project["meta"] "gridlog")
-    jidjs = gridfire(Project["meta"] fid, drymode, pid)
-    jobsize = splitx(jidjs, "[|]", 1)
-    jobid = splitx(jidjs, "[|]", 2)
-    gridwatch(jobid)
-    gridlog(fid, jobid, pid, jobsize)
+    tup(gridfireArray(Project["meta"] fid, drymode, pid), jsjid)
+    gridwatchArray(jsjid[2])
+    gridlogArray(fid, jsjid[2], pid, jsjid[1])
     print "Job completed."
+  }
+  else if(_engine == 2) {
+    _delay = _griddelay
+    if(!checkexists(Project["meta"] "gridlog"))
+      mkdir(Project["meta"] "gridlog")
+    jsjid = gridfireJsub(Project["meta"] fid, drymode, pid)
+    gridwatchJsub(jsjid)
+    gridlogJsub(fid)
   }
 
   system("")
@@ -132,26 +141,95 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
 
   bell()
 
-  datee = sys2var(Exe["date"] " +'%s'")
-  datef = (datee - dateb)
-  acount = splitn(Project["meta"] fid, a)
-  avgsec = datef / acount
+  datef = sys2var(Exe["date"] " +'%s'") - dateb
+  acount = wc(Project["meta"] fid)
   printf "\nProcessed " acount " articles in " (datef / 60) " minutes. Avg " (datef / acount) " sec each"
   if(_engine == 0)
     print " (delay = " _delay "sec ; procs = " _procs  ")"
-  else if(_engine == 1)
+  else if(_engine == 1 || _engine == 2)
     print
 }
 
 #
+# gridfire - start driver.awk workers on the grid using jsub with _delay between each startup
+#
+function gridfireJsub(auth, drymode, pid,    i,a,command) {
+
+  for(i = 1; i <= splitn(auth, a, i); i++) {
+    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -d " drymode " -p " pid " -n \"" shquote(a[i]) "\""
+    print command
+    sys2var(command)
+    sleep(_delay, "unix")
+  }
+  return i - 1
+}
+#
+# gridwatch - monitor qstat until workers are finished
+#
+function gridwatchJsub(jobsize,  op) {
+  printf "Waiting on " jobsize " workers "
+
+  while(1) {
+    op = sys2var("qstat -j tools.botwikiawk-" BotName "-? 2>/dev/null" )
+    if(empty(strip(op)))
+      break
+#    print "\nList of processes still running on grid ..."
+#    print op
+    printf "."
+    sleep(5, "unix")
+  }
+  print
+}
+#
+# gridlog - concat grid log-files into single file
+#
+function gridlogJsub(fid,  cwd,a,b,i,j,logname) {
+
+  cwd = ENVIRON["PWD"]
+  if(! chDir(Project["meta"] "gridlog")) {
+    stdErr("runbot.awk: Unable to change dir to " Project["meta"] "gridlog")
+    exit
+  }
+
+  # generate log name incrimenting number ie. auth-runbot-1.log .. auth-runbot-2.log etc..
+  if(checkexists(fid "-runbot-1.log")) {
+    delete b
+    for(i = 1; i <= splitn(sys2var(Exe["ls"] " " fid "*") "\n", a, i); i++)
+      b[splitx(splitx(a[i], "[.]", 1), "[-]", 3)] = a[i]
+    PROCINFO["sorted_in"] = "@ind_num_desc"
+    for(j in b) {
+      logname = fid "-runbot-" int(j + 1) ".log"
+      break
+    }
+  }
+  else
+    logname = fid "-runbot-1.log"
+
+  print "\nCreating log " Project["meta"] "gridlog/" logname
+
+  # create log file
+  delete a
+  delete b
+  for(i = 1; i <= splitn(sys2var(Exe["ls"] " tool*") "\n", a, i); i++)
+    b[splitx(a[i], "[.]", 3)] = a[i]
+  PROCINFO["sorted_in"] = "@ind_str_asc"
+  for(j in b) {
+    print readfile2(b[j]) >> logname
+    removefile(b[j])
+  }
+  chDir(cwd)
+}
+
+
+#
 # gridfire - start driver.awk workers on the grid using a qsub -t job-array
 #
-function gridfire(auth, drymode, pid,   driver,procname,logdir,jobsize,command,op,a) {
+function gridfireArray(auth, drymode, pid,   driver,procname,logdir,jobsize,command,op,a) {
 
   driver = sys2var("readlink -f `which " Exe["driver"] "`")
   procname = "tools.botwikiawk-" pid
   logdir = Project["meta"] "gridlog"
-  jobsize = splitn(auth,a)
+  jobsize = wc(auth)
   if(empty(jobsize) || jobsize < 1 ) {
     stdErr("runbot.awk: unable to determine size of auth file " auth)
     exit
@@ -166,7 +244,7 @@ function gridfire(auth, drymode, pid,   driver,procname,logdir,jobsize,command,o
     # Your job-array 432577.1-5:1 ("test3") has been submitted
     op = sys2var(command)
     if(op ~ /has been submitted/)
-      return jobsize "|" strip(splitx(splitx(op, "[.]", 1), "[ ]", 3))
+      return jobsize SUBSEP strip(splitx(splitx(op, "[.]", 1), "[ ]", 3))
     else {
       stdErr("runbot.awk: Unable to submit job. Returned message: " op)
       exit
@@ -176,12 +254,13 @@ function gridfire(auth, drymode, pid,   driver,procname,logdir,jobsize,command,o
     stdErr("runbot.awk: unable to find driver.awk")
     exit
   }
+  return "0" SUBSEP "0"
 }
 
 #
 # gridwatch - monitor qstat until workers are finished
 #
-function gridwatch(jid,  op,re) {
+function gridwatchArray(jid,  op,re) {
 
   print "Job-array " jid " submitted."
 
@@ -198,9 +277,9 @@ function gridwatch(jid,  op,re) {
 }
 
 #
-# gridlog - concat grid log files into single file
+# gridlog - concat grid log-files into single file
 #
-function gridlog(fid,jid,pid,jobsize,   cwd,a,b,c,fn,i,j,z,logname) {
+function gridlogArray(fid,jid,pid,jobsize,   cwd,a,b,c,fn,i,j,z,logname) {
 
 
   cwd = ENVIRON["PWD"]
