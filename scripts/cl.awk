@@ -290,6 +290,7 @@ function getopt(argc, argv, options,    thisopt, i) {
     } else
         _opti++
     return thisopt
+
 }
 
 

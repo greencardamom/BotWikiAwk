@@ -214,5 +214,6 @@ function usage() {
   print "Example: "
   print "          driver -n \"Charles Dickens\" -p cb14feb16.001-100 -d y"
   print ""
+
 }
 
