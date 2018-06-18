@@ -37,7 +37,7 @@ BEGIN {
   BotName = _pwdA[_pwdC]
 
   # Multitasking engine method
-  _engine = 2  # 0 = GNU parallel (for single computer with multi-core CPU)
+  _engine = 0  # 0 = GNU parallel (for single computer with multi-core CPU)
                # 1 = Toolforge grid job-array (fast/huge! use with caution if doing outside network requests)
                # 2 = Toolforge grid jsub (adjustable speed 1 worker every x seconds)
 
