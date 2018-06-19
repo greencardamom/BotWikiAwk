@@ -40,7 +40,7 @@ BEGIN {
 BEGIN {
 
   # skip any bots that have a custom version        
-  if(BotName == "wm2") { 
+  if(BotName == "waybackmedic") { 
     print "See projectm.awk"
     exit
   } 
@@ -425,7 +425,7 @@ function assemble(pid,did,mid,   data,meta,indextemp,indexmain,d,a,c,i,j,outfile
 
   system("")  # flush buffer
   if( debug )
-    print "index        = " splitn(readfile(outfile), a)
+    print "index        = " wc(outfile)
   removefile(meta "index")
   sys2var(Exe["mv"] " " shquote(outfile) " " shquote(meta "index") )  
 

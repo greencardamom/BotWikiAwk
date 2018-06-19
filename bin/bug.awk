@@ -39,7 +39,7 @@ BEGIN {
 BEGIN {
 
   # skip any bots that have a custom version 
-  if(BotName == "wm2") { 
+  if(BotName == "waybackmedic") { 
     print "See bugm.awk"
     exit        
   }

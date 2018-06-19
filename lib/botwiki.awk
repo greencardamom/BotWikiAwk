@@ -238,7 +238,7 @@ function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
   if(flag ~ /space/)
     sep = " " 
   else
-    sep = "----"
+    sep = " ---- "
 
   if(length(safem))
     print safen sep safem >> database
@@ -254,6 +254,7 @@ function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
 #
 # . default: follows "#redirect [[new name]]"
 # . optional: redir = "follow/dontfollow"
+# . consider using 'wikiget -w' 
 #
 function getwikisource(namewiki, redir,    f,ex,k,a,b,command,urlencoded,r,redirurl) {
 
@@ -423,3 +424,112 @@ function bell(  a,i,ok) {
   if(ok) sys2var(Exe["bell"])
 
 }
+
+#
+# deflate() - Collapse article - encode select common-things so they don't mess with parsing 
+#
+#  . create global arrays InnerDd[], InnerId[] and InnerSd[]
+#
+function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTemplate) {
+
+  ReSpace = "[\n\r\t]*[ ]*[\n\r\t]*[ ]*[\n\r\t]*"
+  ReTemplate = "[{]" ReSpace "[{][^}]+[}]" ReSpace "[}]"
+
+  # Collapse newlines 
+  gsub("\n"," zzCRLFzz",article)  
+
+  # Replace "{{date|data}}" with "dateZzPp1" and populate global array InnerDd["dateZzPp1"] = "{{date|data}}"
+  re = "[{]" ReSpace "[{]" ReSpace "date[^}]*[}]" ReSpace "[}]"
+  c = patsplit(article, field, re, sep)
+  while(i++ < c) {
+    re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
+    if(field[i] ~ re)
+      continue
+    codename = "dateZzPp" i
+    InnerDd[codename] = field[i]
+    field[i] = codename
+  }
+  if(c > 0) article = unpatsplit(field, sep)
+
+  # Replace "|id={{template|data}}" with "|id=idQqYy1" and populate global array InnerId["idQqYy1"] = "|id={{template|data}}"
+  # Repeat for other commonly templated arguments
+  split("id|ref|url|author|title|work|publisher|contribution|quote|website|editor|series", loopy, /[|]/)
+  for(j in loopy) {
+    i = c = 0
+    re = "[|]" ReSpace loopy[j] ReSpace "[=]" ReSpace ReTemplate
+    c = patsplit(article, field, re, sep)
+    while(i++ < c) {
+      if(match(field[i], ReTemplate, inner) ) {
+        re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
+        if(field[i] ~ re)
+          continue
+        codename = loopy[j] "QqYy" i
+        field[i] = gsubs(inner[0], codename, field[i])
+        InnerId[codename] = inner[0]
+      }
+    }
+    if(c > 0) article = unpatsplit(field, sep)
+  }
+
+  # Replace "{{template}}" with "aAxXQq1" and populate global array InnerSd["aAxXQq1"] = "{{template}}"
+  # Repeat for other common templates
+  i = 0
+  split("{{=}}|{{!}}|{{'}}|{{snd}}|{{spnd}}|{{sndash}}|{{spndash}}|{{Spaced en dash}}|{{spaced en dash}}|{{·}}|{{•}}|{{\\}}|{{en dash}}|{{em dash}}|{{-'}}", loopy, /[|]/)
+  for(j in loopy) {
+    i++
+    codename = "aAxXQq" i
+    InnerSd[codename] = loopy[j]
+    article = gsubs(InnerSd[codename], codename, article)
+  }
+  return article
+
+}
+#
+# Re-inflate article in reverse order
+#
+function inflate(articlenew, i) {
+
+    for(i in InnerSd)
+      articlenew = gsubs(i, InnerSd[i], articlenew)
+    for(i in InnerId)
+      articlenew = gsubs(i, InnerId[i], articlenew)
+    for(i in InnerDd)
+      articlenew = gsubs(i, InnerDd[i], articlenew)
+    gsub(/[ ]zzCRLFzz/,"\n",articlenew)
+
+    return articlenew
+}
+
+
+#
+# Return true if s is an encoded template
+#  Optional second argument: date, template, static (ie. ZzPp, QqYy, aAxXQq - respective)
+#            
+function istemplate(s, code) {
+
+  if(code == "date") {
+    if(s ~ /ZzPp/) return 1
+  }
+  else if(code == "template") {
+    if(s ~ /QqYy/) return 1
+  }
+  else if(code == "static") {
+    if(s ~ /aAxXQq/) return 1       
+  }    
+  else {
+    if(s ~ /ZzPp|QqYy|aAxXQq/) return 1       
+  }
+  return 0
+}
+
+#
+# isembedded - given a template, return true if it contains an embedded template
+#    Example:
+#        print isembedded( "{{cite web|date{{august 1|mdy}}" }} ==> 1
+#
+function isembedded(tl) {
+  if (tl ~ /[{][{][^{]*[{][{]/)
+    return 1
+  return 0
+}
+

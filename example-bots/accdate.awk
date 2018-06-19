@@ -44,7 +44,6 @@ BEGIN {
   IGNORECASE = 1
 
   ReSpace = "[\n\r\t]*[ ]*[\n\r\t]*[ ]*[\n\r\t]*"
-  ReTemplate = "[{]" ReSpace "[{][^}]+[}]" ReSpace "[}]"
   ReCites  = "[{][ ]{0,}[{]" ReSpace "(Citation|Cite speech|Cite conference|Cite newsgroup|Cite techreport|Cite journal|Cite interview|Cite thesis|Cite bioRxiv|Cite serial|Cite episode|Cite arXiv|Cite report|Cite press release|Cite map|Cite magazine|Cite book|Cite encyclopedia|Cite sign|Cite news|Cite AV media notes|Cite AV media)" ReSpace "[|][^}]+[}][ ]{0,}[}]"
   ReCites2 = "[{][ ]{0,}[{]" ReSpace "(Cite journal|Cite books|Cite news|Cite magazine|Cite techreport|Cite thesis|Cite press release|Cite encyclopedia|Cite bioRxiv)" ReSpace "[|][^}]+[}][ ]{0,}[}]"
   ReTail = "[^|}<\n\r\t]*[^|}<\n\r\t]?"
@@ -131,20 +130,16 @@ function accdate(article,  c,i,field,sep,orig,newarticle,newcite,j,reCites) {
   for(j = 1; j < 3; j++) {
     if(j == 1)
       reCites = ReCites
-    else if(j == 2)
+    else 
       reCites = ReCites2
     c = patsplit(article, field, reCites, sep)
-    i = 0
-    while(i++ < c) {
+    for(i = 1; i <= c; i++) {
       if(length(field[i]) > 0) {
         delete G
         if(j == 1) 
           newcite = accdate1(field[i])
         else if(j == 2)
           newcite = accdate2(field[i])
-        else
-          newcite = field[i]
-
         if(newcite != field[i]) {
           orig = field[i]
           field[i] = newcite
@@ -153,10 +148,8 @@ function accdate(article,  c,i,field,sep,orig,newarticle,newcite,j,reCites) {
             print "1"
             exit
           }
-          else {
-            print wikiname " ---- " gsubs("\n", "", orig) " ---- " gsubs("\n","",newcite) " ---- accdate" j " in accdate.awk" >> Logfile
-            close(Logfile)
-          }
+          else 
+            sendlog(Logfile, wikiname, gsubs("\n", "", orig) " ---- " gsubs("\n","",newcite) " ---- accdate" j " in accdate.awk")
         }
       }
     }
@@ -177,7 +170,7 @@ function accdate2(tl,  debug,tls) {
   
   if(debug) print "\n_______________accdate2___________________\n"
 
-  if(tl ~ /[{][{][^{]*[{][{]/) {  
+  if(isembedded(tl)) {  
     if(debug) print tl "\nSkipped: contains an unknown embedded template missed during deflate()\n----"
     return tl
   }
@@ -221,7 +214,7 @@ function accdate1(tl,  tls,re,dest,reIdents,debug) {
   
   if(debug) print "\n_______________accdate1___________________\n"
 
-  if(tl ~ /[{][{][^{]*[{][{]/) {  
+  if(isembedded(tl)) {  
     if(debug) print tl "\nSkipped: contains an unknown embedded template missed during deflate()\n----"
     return tl
   }
@@ -310,7 +303,7 @@ function getstatus(tls,arg,   statusidx,argidx,argre,dest,re,dest2) {
       G[argidx] = "exists"
       re = "[|]" ReSpace argre ReSpace "[=]" ReSpace
       if(match(dest[0], re, dest2)) {
-        if(empty(urlElement(strip(gsubs(dest2[0],"",dest[0])), "netloc"))) { # no discernable domain name in url field
+        if(empty(urlElement(strip(gsubs(dest2[0],"",dest[0])), "netloc"))) {      # no discernable domain name in url field
           if(! istemplate(dest[0]))                                               # URL not templated
             G[statusidx] = "no"
         }
@@ -364,93 +357,4 @@ function deleteargs(tl,debug,  re,dest) {
     return tl
 }
 
-
-__________________________Utilities________________________________________
-
-#
-# Return true if s is an encoded template
-#  Optional second argument: date, template, static (ie. ZzPp, QqYy, aAxXQq - respective)
-#
-function istemplate(s, code) {
-
-  if(code == "date") {
-    if(s ~ /ZzPp/) return 1
-  }
-  else if(code == "template") {
-    if(s ~ /QqYy/) return 1
-  }
-  else if(code == "static") {
-    if(s ~ /aAxXQq/) return 1
-  }
-  else {
-    if(s ~ /ZzPp|QqYy|aAxXQq/) return 1
-  }
-  return 0
-}
-
-#
-# Collapse select common things so it doesn't mess with parsing cites
-#
-function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename) {
-
-  # Replace "{{date|data}}" with "dateZzPp1" and populate global array InnerDd["dateZzPp1"] = "{{date|data}}"
-  re = "[{]" ReSpace "[{]" ReSpace "date[^}]*[}]" ReSpace "[}]"
-  c = patsplit(article, field, re, sep)      
-  while(i++ < c) {
-    re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
-    if(field[i] ~ re) 
-      continue
-    codename = "dateZzPp" i
-    InnerDd[codename] = field[i]
-    field[i] = codename
-  }
-  if(c > 0) article = unpatsplit(field, sep)
-
-  # Replace "|id={{template|data}}" with "|id=idQqYy1" and populate global array InnerId["idQqYy1"] = "|id={{template|data}}"
-  # Repeat for other commonly templated arguments
-  split("id|ref|url|author|title|work|publisher|contribution|quote|website|editor|series", loopy, /[|]/)
-  for(j in loopy) {
-    i = c = 0
-    re = "[|]" ReSpace loopy[j] ReSpace "[=]" ReSpace ReTemplate
-    c = patsplit(article, field, re, sep)
-    while(i++ < c) {
-      if(match(field[i], ReTemplate, inner) ) {
-        re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
-        if(field[i] ~ re) 
-          continue
-        codename = loopy[j] "QqYy" i
-        field[i] = gsubs(inner[0], codename, field[i])
-        InnerId[codename] = inner[0]
-      }
-    }
-    if(c > 0) article = unpatsplit(field, sep)
-  }
-
-  # Replace "{{template}}" with "aAxXQq1" and populate global array InnerSd["aAxXQq1"] = "{{template}}"
-  # Repeat for other common templates
-  i = 0
-  split("{{=}}|{{!}}|{{'}}|{{snd}}|{{spnd}}|{{sndash}}|{{spndash}}|{{Spaced en dash}}|{{spaced en dash}}|{{·}}|{{•}}|{{\\}}|{{en dash}}|{{em dash}}|{{-'}}", loopy, /[|]/)
-  for(j in loopy) {
-    i++
-    codename = "aAxXQq" i
-    InnerSd[codename] = loopy[j]
-    article = gsubs(InnerSd[codename], codename, article)
-  }
-  return article
-
-}
-#
-# Re-inflate article in reverse order
-#
-function inflate(articlenew, i) {
-
-    for(i in InnerSd) 
-      articlenew = gsubs(i, InnerSd[i], articlenew)
-    for(i in InnerId) 
-      articlenew = gsubs(i, InnerId[i], articlenew)
-    for(i in InnerDd) 
-      articlenew = gsubs(i, InnerDd[i], articlenew)
-
-    return articlenew
-}
 
