@@ -3,7 +3,7 @@
 * Shell tools. No ecosystems (PhP, Perl, Python). No database systems (SQL, etc) 
 * Framework compatible with bots written in other languages
 * Data files in plain text with a CSV-like structure
-* Manage batches of articles of any size, 50 for [[WP:BRFA]] or 50k+ for production runs
+* Manage batches of articles of any size, 50 for WP:BRFA or 50k+ for production runs
 * Runs using GNU parallel making full use of multi-core CPUs
 * ..or runs on the Toolforge grid across 40+ distributed computers
 * Dry-run mode, diffs can be checked out before uploading 
@@ -18,6 +18,6 @@ Run a bot in three commands:
 
 	makebot ~/BotWikiBot/bots/accdate
 	project -c -p accdate20181102.00001-00050
-        runbot accdate20181102.00001-00050 auth
+	runbot accdate20181102.00001-00050 auth
 
 [Documentation](https://en.wikipedia.org/wiki/User:GreenC/BotWikiAwk)
