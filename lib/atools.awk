@@ -36,7 +36,7 @@ BEGIN {
     _cliff_seed = "0.00" splitx(sprintf("%f", systime() * 0.000001), ".", 2)
 
   # Wayback
-  iahre = "([Ww][Ee][Bb]|[Ww][Aa][Yy][Bb][Aa][Cc][Kk]|[Cc][Ll][Aa][Ss][Ss][Ii][Cc][-][Ww][Ee][Bb]|[Ww][Ww][Ww][.][Ww][Ee][Bb]|[Ww][Ww][Ww]|[Ww][Ee][Bb][-][Bb][Ee][Tt][Aa]|[Rr][Ee][Pp][Ll][Aa][Yy]|[Rr][Ee][Pp][Ll][Aa][Yy][-][Ww][Ee][Bb]|[Ww][Ee][Bb][.][Ww][Aa][Yy][Bb][Aa][Cc][Kk])"
+  iahre = "([Cc][Ll][Aa][Ss][Ss][Ii][Cc][-][Ww][Ee][Bb]|[Ww][Ww][Ww][.][Ww][Ee][Bb]|[Ww][Ww][Ww]|[Ww][Ee][Bb][-][Bb][Ee][Tt][Aa]|[Rr][Ee][Pp][Ll][Aa][Yy][-][Ww][Ee][Bb]|[Rr][Ee][Pp][Ll][Aa][Yy]|[Ww][Ee][Bb][.][Ww][Aa][Yy][Bb][Aa][Cc][Kk]|[Ww][Ee][Bb]|[Ww][Aa][Yy][Bb][Aa][Cc][Kk])"
   iare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]" iahre "[.]?[Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
   # WebCite
@@ -186,7 +186,6 @@ function urltimestamp_wayback(url,  a,c,i) {
 #     20061009134445
 #
 function urltimestamp(url,  c,a,i) {
-
 
   if(isarchiveorg(url) || isbibalex(url))  # http://web.archive.bibalex.org:80/web/20011007083709/http..
     return urltimestamp_wayback(url)       # http://web.archive.org/web/20011007083709/http..
@@ -583,7 +582,7 @@ function wayurlurl(url,  date,inx,baseurl) {
   if(!empty(date)) {
     inx = index(url, date)
     if(inx > 0) {                  
-      baseurl = removesection(url, 1, inx + length(date) + 1, "wayurlurl")
+      baseurl = substr(url, inx + length(date) + 1, length(url))
       if(baseurl ~ /[Hh][Tt][Tt][Pp][Ss]?[%]3[Aa]/)
         baseurl = urldecodeawk(baseurl)
       if(!empty(baseurl) && noprotocol(baseurl))

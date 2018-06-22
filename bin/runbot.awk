@@ -77,6 +77,10 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
   checkexists(Project["meta"] fid, "runbot.awk checkexists()", "exit")
   checkexists(Project["meta"] "cl.awk", "runbot.awk checkexists()", "exit")
   checkexists(Project["meta"] "clearlogs", "runbot.awk checkexists()", "exit")
+  if(checkexists(Project["meta"] "index.temp")) {
+    stdErr("runbot.awk: Error: " Project["meta"] "index.temp exists - delete or save it before running")
+    exit
+  }
 
   dateb = sys2var(Exe["date"] " +'%s'")
 

@@ -37,10 +37,12 @@ BEGIN {
 BEGIN {
 
   # skip any bots that have a custom version
-  if(BotName == "wm2") {
+  if(BotName == "waybackmedic") {
     print "See driverm.awk"
     exit
   }
+
+  _cliff_seed = "0.00" splitx(sprintf("%f", systime() * 0.000001), ".", 2)
 
   Optind = Opterr = 1
   while ((C = getopt(ARGC, ARGV, "hd:p:n:a:m:")) != -1) {
@@ -82,7 +84,7 @@ BEGIN {
 
 # Create temp directory
   nano = substr(sys2var( Exe["date"] " +\"%N\""), 1, 6)
-  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano "/"
+  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano randomnumber(99) "/"
   if(!mkdir(wm_temp)) {
     stdErr("driver.awk: unable to create temp file " wm_temp)
     exit

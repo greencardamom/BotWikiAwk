@@ -445,7 +445,7 @@ function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTe
     re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
     if(field[i] ~ re)
       continue
-    codename = "dateZzPp" i
+    codename = "dateZzPp" i "z"
     InnerDd[codename] = field[i]
     field[i] = codename
   }
@@ -463,7 +463,7 @@ function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTe
         re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
         if(field[i] ~ re)
           continue
-        codename = loopy[j] "QqYy" i
+        codename = loopy[j] "QqYy" i "z"
         field[i] = gsubs(inner[0], codename, field[i])
         InnerId[codename] = inner[0]
       }
@@ -477,7 +477,7 @@ function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTe
   split("{{=}}|{{!}}|{{'}}|{{snd}}|{{spnd}}|{{sndash}}|{{spndash}}|{{Spaced en dash}}|{{spaced en dash}}|{{·}}|{{•}}|{{\\}}|{{en dash}}|{{em dash}}|{{-'}}", loopy, /[|]/)
   for(j in loopy) {
     i++
-    codename = "aAxXQq" i
+    codename = "aAxXQq" i "z"
     InnerSd[codename] = loopy[j]
     article = gsubs(InnerSd[codename], codename, article)
   }

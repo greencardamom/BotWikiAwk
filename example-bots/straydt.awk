@@ -413,7 +413,7 @@ function removedups2(article,deadcbi,deadcbidead,  c,field,sep,i,dest) {
 
   c = patsplit(article, field, deadcbidead, sep)
   if(c > 0) {
-    for(i = 1; i <= c[ i++) {
+    for(i = 1; i <= c; i++) {
       if(match(field[i], deadcbi, dest) > 0) {
         field[i] = subs(dest[0], "", field[i])
         count++
