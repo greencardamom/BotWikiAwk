@@ -133,41 +133,39 @@ BEGIN {
     if(length(summary) < 5)
       summary = "Edit by " BotName
 
-    command = "timeout 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l en"
-
-    printf("  startcommand - ")
+    command = "timeout 20s " Exe["wikiget"] " -E " shquote(namewiki) " -S " shquote(summary) " -P " shquote(article) " -l en"
     result = sys2var(command)
 
     if(result ~ /[Ss]uccess/) {
-      prnt("driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
-      print name >> Project["discovereddone"]
+      prnt("    driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " namewiki)
+      print namewiki >> Project["discovereddone"]
       close(Project["discovereddone"])
     }
     else if(result ~ /[Nn]o[-][Cc]hange/ ) {
-      prnt("driver.awk: wikiget status: No change. " name)
-      print name >> Project["discoverednochange"]
+      prnt("    driver.awk: wikiget status: No change. " namewiki)
+      print namewiki >> Project["discoverednochange"]
       close(Project["discoverednochange"])
     }
 
     else {  # Try 2
 
+      prnt("    driver.awk: Try 2")
       sleep(2)
-      printf("Try 2: " name " - ")
       result = sys2var(command)
 
       if(result ~ /[Ss]uccess/) {
-        prnt("driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
-        print name >> Project["discovereddone"]
+        prnt("    driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " namewiki)
+        print namewiki >> Project["discovereddone"]
         close(Project["discovereddone"])
       }
       else if(result ~ /[Nn]o[-][Cc]hange/ ) {
-        prnt("driver.awk: wikiget status: No change. " name)
-        print name >> Project["discoverednochange"]
+        prnt("    driver.awk: wikiget status: No change. " namewiki)
+        print namewiki >> Project["discoverednochange"]
         close(Project["discoverednochange"])
       }
       else {
-        prnt("driver.awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " name)
-        print name >> Project["discoverederror"]
+        prnt("    driver.awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " namewiki)
+        print namewiki >> Project["discoverederror"]
         close(Project["discoverederror"])
       }
     }
@@ -216,6 +214,5 @@ function usage() {
   print "Example: "
   print "          driver -n \"Charles Dickens\" -p cb14feb16.001-100 -d y"
   print ""
-
 }
 

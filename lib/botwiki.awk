@@ -331,6 +331,11 @@ function validate_datestamp(stamp,   vyear, vmonth, vday, vhour, vmin, vsec) {
 #
 function stopbutton(button,bb,  command,butt,i) {
 
+ # convert https://en.wikipedia.org/wiki/User:GreenC_bot/button
+ #         https://en.wikipedia.org/w/index.php?title=User:GreenC_bot/button
+  if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
+    StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
+
   command = "timeout 20s wget -q -O- " shquote(StopButton "&action=raw")
   button = sys2var(command)
 
@@ -481,6 +486,20 @@ function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTe
     InnerSd[codename] = loopy[j]
     article = gsubs(InnerSd[codename], codename, article)
   }
+
+  # Within URLs, convert Wikipedia magic characters to percent-encoded
+
+  if(opt == "magic") {
+    c = patsplit(article, field, "[Hh][Tt][Tt][Pp][^ <|\\]}\n\t]*[^ <|\\]}\n\t]", sep)
+    for(i = 1; i <= c; i++) {
+      if(field[i] ~ /aAxXQq1z/)              # aAxXQq1z is {{=}} is "=" is %3D
+        field[i] = gsubs("aAxXQq1z", "%3D", field[i])
+      if(field[i] ~ /aAxXQq2z/)              # aAxXQq2z is {{!}} is "|" is %7C
+        field[i] = gsubs("aAxXQq2z", "%7C", field[i])
+    }
+    if(c > 0) article = unpatsplit(field, sep)
+  }
+
   return article
 
 }

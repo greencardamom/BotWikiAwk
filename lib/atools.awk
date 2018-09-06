@@ -40,7 +40,7 @@ BEGIN {
   iare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]" iahre "[.]?[Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
   # WebCite
-  wcre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww]?[Ww]?[Ww]?[.]?[Ww][Ee][Bb][Cc][Ii][Tt][Aa][Tt][Ii][Oo][Nn][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
+  wcre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]([Ww][Ww][Ww][.])?[Ww][Ee][Bb][Cc][Ii][Tt][Aa][Tt][Ii][Oo][Nn][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
   # Archive.is
   isre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww]?[Ww]?[Ww]?[.]?[Aa][Rr][Cc][Hh][Ii][Vv][Ee][.]([Tt][Oo][Dd][Aa][Yy]|[Ii][Ss]|[Ll][Ii]|[Ff][Oo])[:]?[8]?[04]?[48]?[30]?[/]"
@@ -67,7 +67,10 @@ BEGIN {
   vefsafnre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Aa][Yy][Bb][Aa][Cc][Kk][.][Vv][Ee][Ff][Ss][Aa][Ff][Nn][.][Ii][Ss][:]?[8]?[04]?[48]?[30]?"
 
   # Europa Archives (Ireland)
-  europare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Cc][Oo][Ll][Ll][Ee][Cc][Tt][Ii][Oo][Nn][.][Ee][Uu][Rr][Oo][Pp][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
+  europare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Cc][Oo][Ll][Ll][Ee][Cc][Tt][Ii][Oo][Nn][Ss]?[.][Ee][Uu][Rr][Oo][Pp][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
+
+  # Internet Memory Foundation (Netherlands)
+  memoryre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Cc][Oo][Ll][Ll][Ee][Cc][Tt][Ii][Oo][Nn][Ss][.][Ii][Nn][Tt][Ee][Rr][Nn][Ee][Tt][Mm][Ee][Mm][Oo][Rr][Yy][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
   # Perma.CC Archives
   permaccre =  "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Pp][Ee][Rr][Mm][Aa][-][Aa][Rr][Cc][Hh][Ii][Vv][Ee][Ss][.][Cc][Cc][:]?[8]?[04]?[48]?[30]?"
@@ -132,6 +135,18 @@ BEGIN {
   # York University Archives
   # https://digital.library.yorku.ca/wayback/20160129214328/http
   yorkre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Dd][Ii][Gg][Ii][Tt][Aa][Ll][.][Ll][Ii][Bb][Rr][Aa][Rr][Yy][.][Yy][Oo][Rr][Kk][.][Cc][Aa][:]?[8]?[04]?[48]?[30]?"
+
+  # Library and Archives Canada - http://webarchive.bac-lac.gc.ca:8080/wayback/20080116045132/http                                                              
+  lacre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Ee][Bb][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Bb][Aa][Cc][-][Ll][Aa][Cc][.][Gg][Cc][.][Cc][Aa][:]?[8]?[04]?[48]?[30]?" 
+
+
+
+  # Citation templates that use archiveurl/archivedate 
+  # see https://phabricator.wikimedia.org/T178106 for a list of templates
+  # copy list to file "cites-list" and run this awk command to generate the citesre regex statement then copy-paste it here
+  # awk -ilibrary 'BEGIN{printf "[{][{][ ]*(";for(i=1;i<=splitn("cites-list",a,i);i++){gsub(/^\"{{|}}\",?$/,"",a[i]);printf a[i] "|" }; print ")[^}]+}}[ ]*"}'
+  citesre = "[{][{][ ]*(A Short Biographical Dictionary of English Literature|AZBilliards|BDMag|Bokref|Catholic[-]hierarchy|Cita audio|Cita conferencia|Cita conferenza|Cita DANFS|Cita enciclopedia|Cita Enciclopedia Católica|Cita entrevista|Cita episodio|Cita grupo de noticias|Cita historieta|Cita immagine|Cita juicio|Cita libro|Cita lista de correo|Cita mapa|Cita news|Cita notas audiovisual|Cita noticia|Cita pubblicazione|Cita publicación|Citar web|Cita tesis|Cita testo|Citation|Citation step free tube map|Citation Style documentation|Cita TV|Cita vídeo|Cita visual|Cita web|Cite act|Cite Australasia|Cite AV media|Cite AV media notes|Cite book|Cite comic|Cite comics image|Cite comics image lrg|Cite conference|Cite constitution|Cite DVD notes|Cite encyclopedia|Cite episode|Citeer boek|Citeer encyclopedie|Citeer journal|Citeer nieuws|Citeer tijdschrift|Citeer web|Cite Hansard|Cite IETF|Cite interview|Cite IrishBio|Cite journal|Cite letter|Cite magazine|Cite mailing list|Cite map|Cite Memoria Chilena|Cite music release notes|Cite news|Cite newsgroup|Cite PH act|Cite podcast|Cite postcode project|Cite press release|Cite QPN|Cite quick|Cite report|Cite SBDEL|Cite serial|Cite sign|Cite speech|Cite sports[-]reference|Cite techreport|Cite thesis|Cite Transperth timetable|Cite Trove newspaper|Cite tweet|Cite video|Cite vob|Cite web|Cite wikisource|College athlete recruit end|Cytuj stronę|DNZB|Documentación cita|Etude|Gazette WA|Goalzz|Harvard reference|Harvrefcol|Internetquelle|IPMag|IPSite|ITIS|IUCN|Kilde artikkel|Kilde avhandling|Kilde avis|Kilde AV[-]medium|Kilde bok|Kilde konferanse|Kilde oppslagsverk|Kilde pressemelding|Kilde www|KLISF|Lien conférence|Lien vidéo|Lien web|Macdonald Dictionary|MTRsource|Obra citada|Online source|PBMag|Press|Pressmeddelanderef|SA Rugby Article|Silvics|Singapore legislation|Source archived|Tidningsref|Tidskriftsref|Vancite book|Vancite journal|Vancite news|Vancite web|Vcite book|Vcite journal|Vcite news|Vcite web|Verkkoviite|Webbref|WebbrefSV|Web kaynağı|Web reference|WsPSM|Статья)[^}]+}}[ ]*"
+  # use of citesre requires IGNORECASE=1 to be set
 
 }
 
@@ -248,7 +263,8 @@ function urltimestamp(url,  c,a,i) {
                                           # http://www.padi.cat:8080/wayback/20140404212712/http
                                           # http://nukrobi2.nuk.uni-lj.si:8080/wayback/20160203130917/http
                                           # http://digital.library.yorku.ca/wayback/20160129214328/http
-  if(isporto(url) || isvefsafn(url) || iscatalon(url) || isslovene(url) || isyork(url) ) {
+                                          # http://webarchive.bac-lac.gc.ca:8080/wayback/20080116045132/http
+  if(isporto(url) || isvefsafn(url) || iscatalon(url) || isslovene(url) || isyork(url) || islac(url) ) {
     c = split(url, a, /\//)
     for(i=0;i<=c;i++) {
       if(!empty(a[i])) {
@@ -268,7 +284,8 @@ function urltimestamp(url,  c,a,i) {
     }
   }
 
-  if(iseuropa(url)) {                      # http://collection.europarchive.org/nli/20160525150342/http
+                                              # http://collection.internetmemory.org/nli/20160525150342/http
+  if(iseuropa(url) || ismemory(url)) {        # http://collection.europarchive.org/nli/20160525150342/http
     c = split(url, a, /\//)
     for(i=0;i<=c;i++) {
       if(!empty(a[i])) {
@@ -367,7 +384,7 @@ function isarchive_helper(url, re) {
 #
 # Return true if URL is for webcitation.org
 #
-function iswebcite(url) { return isarchive_helper(url, wcre "/") }
+function iswebcite(url) { return isarchive_helper(url, wcre "[/]") }
 #             
 # Return true if URL is for archive.is, .fo, .il, .ec, .today
 #
@@ -379,15 +396,15 @@ function islocgov(url) { return isarchive_helper(url, locgovre) }
 #
 # Return true if URL is for http://arquivo.pt/wayback/20091010102944/http..
 #
-function isporto(url) { return isarchive_helper(url, portore  "/?[Ww]?[Aa]?[Yy]?[Bb]?[Aa]?[Cc]?[Kk]?/?[Ww]?[Aa]?[Yy]?[Bb]?[WwAa]?[EeCcLl]?[BbKkLl]?/[0-9*]{8,14}/") }
+function isporto(url) { return isarchive_helper(url, portore  "[/]?[Ww]?[Aa]?[Yy]?[Bb]?[Aa]?[Cc]?[Kk]?[/]?[Ww]?[Aa]?[Yy]?[Bb]?[WwAa]?[EeCcLl]?[BbKkLl]?[/][0-9*]{8,14}[/]") }
 #
 # Return true if URL is for https://swap.stanford.edu/20091122200123/http
 #
-function isstanford(url) { return isarchive_helper(url, stanfordre "/?[Ww]?[Ee]?[Bb]?/[0-9*]{8,14}/") }
+function isstanford(url) { return isarchive_helper(url, stanfordre "[/]?[Ww]?[Ee]?[Bb]?[/][0-9*]{8,14}[/]") }
 #
 # Return true if URL is for http://wayback.archive-it.org/all/20130420084626/http
 #
-function isarchiveit(url) { return isarchive_helper(url, archiveitre "/?[WwAa]?[EeLl]?[BbLl]?/[0-9*]{8,14}/") }
+function isarchiveit(url) { return isarchive_helper(url, archiveitre "[/]?[WwAa]?[EeLl]?[BbLl]?[/][0-9*]{8,14}[/]") }
 #
 # Return true if URL is for web.archive.bibalex.org:80/web/20011007083709/http
 #
@@ -404,6 +421,10 @@ function isvefsafn(url) { return isarchive_helper(url, vefsafnre) }
 # Return true if URL is for http://collection.europarchive.org/nli/20160525150342/http
 #
 function iseuropa(url) { return isarchive_helper(url, europare) }
+#
+# Return true if URL is for http://collections.internetmemory.org/nli/20160525150342/http
+#
+function ismemory(url) { return isarchive_helper(url, memoryre) }
 #
 # Return true if URL is for http://perma-archives.org/warc/20140729143852/http
 #
@@ -456,6 +477,10 @@ function iswikiwix(url) { return isarchive_helper(url, wikiwixre) }
 # York University
 #
 function isyork(url) { return isarchive_helper(url, yorkre) }
+#
+# Library Archives Canada
+#
+function islac(url) { return isarchive_helper(url, lacre) }
 
 
 #
@@ -484,7 +509,8 @@ function isarchive(url, group) {
        ispermacc(url) || isproni(url) || isparliament(url) ||\
        isukweb(url) || iscanada(url) || iscatalon(url) ||\
        issingapore(url) || isslovene(url) || iswebharvest(url) ||\
-       iswikiwix(url) || isyork(url) )
+       iswikiwix(url) || isyork(url) || ismemory(url) ||\
+       islac(url) )
       return 1
   }
 
@@ -496,7 +522,8 @@ function isarchive(url, group) {
        ispermacc(url) || isproni(url) || isparliament(url) ||\
        isukweb(url) || iscanada(url) || iscatalon(url) ||\
        issingapore(url) || isslovene(url) || iswebharvest(url) ||\
-       iswikiwix(url) || isyork(url) )
+       iswikiwix(url) || isyork(url) || ismemory(url) ||\
+       islac(url) )
       return 1
   }
   return 0
@@ -534,6 +561,8 @@ function archivename(url) {
     return "vefsafn"
   else if(iseuropa(url))
     return "europa"
+  else if(ismemory(url))
+    return "memory"
   else if(ispermacc(url))
     return "permacc"
   else if(isproni(url))
@@ -558,6 +587,8 @@ function archivename(url) {
     return "nlaau"
   else if(isyork(url))
     return "york"
+  else if(islac(url))
+    return "lac"
   else {
     # Return "unknown#" where # is a random number so when doing blind comparisons
     # two "unknown" don't cause a match. 
