@@ -727,10 +727,10 @@ function unpatsplit(field,sep,   c,output,debug) {
 #
 # tup() - tool to allow functions to return multiple values like a proto-tuple
 #
-#   . 'f' should be multiple values seperated by SUBSEP
+#   . 'f' should be values seperated by SUBSEP                      
 #
-#   Example: tup(splitup(), a) => a[2] == "world"           
-#            function splitup() { return "hello" SUBSEP "world" }
+#   Example: tup(splitup(), a) => a[2] == "world"     
+#            function splitup() { return "hello" SUBSEP "world" }     
 #
 function tup(f, a) {
   delete a
@@ -1128,8 +1128,8 @@ function splitn(fp, arrSP, counter, start,    c,j,dSP,i) {
 #
 # wc() - wc a file (number of lines)
 #
-#    . to wc a string splitc(s, "\n")
-#    . to wc an array length(a)
+#    . to wc a string splitc(s, "\n")    
+#    . to wc an array length(a)    
 #
 function wc(fp,  a) { return splitn(fp,a) }
 
@@ -1402,15 +1402,24 @@ function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path) {
 
   tail = subs(scheme "://" netloc, "", url)
 
-  splits(tail, b, "#")
-  if(!empty(b[2]))
-    fragment = b[2]
+  c = splits(tail, b, "#")
+  if(!empty(b[c]))
+    fragment = b[c]
 
-  splits(tail, b, "?")
-  if(!empty(b[2])) {
-    query = b[2]
-    if(!empty(fragment))
-      query = subs("#" fragment, "", query)
+  c = splits(tail, b, "?")
+  if(c == 2) {
+    if(!empty(b[2])) {
+      query = b[2]
+      if(!empty(fragment))
+        query = subs("#" fragment, "", query)
+    }
+  }
+  else if(c == 3) {
+    if(!empty(b[2]) && !empty(b[3])) {
+      query = b[2] "?" b[3]
+      if(!empty(fragment))
+        query = subs("#" fragment, "", query)
+    }
   }
 
   path = tail
@@ -1432,13 +1441,15 @@ function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path) {
 
 }
 
+
+
 #
 # urldecodeawk - decode a urlencoded string
 #
 #  Requirement: gawk -b
 #  Credit: Rosetta Stone January 2017
 #
-function urldecodeawk(str,  safe) {
+function urldecodeawk(str,  safe,len,L,M,R,i) {
 
     safe = str
 
