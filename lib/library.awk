@@ -1235,6 +1235,72 @@ function stripwikicomments(str,   space,s,c,i,sand,field,sep,build,re) {
     return sand
 }
 
+#
+# stripnowiki() - remove <nowiki>...</nowiki>
+#
+#   Example:
+#      "George ''Henrys''<nowiki>'</nowiki> is a [[lawyer]] from [[Charlesville (Virginia)|Charlesville Virginia]]"
+#      "George Henrys is a [[lawyer]] from [[Charlesville (Virginia)|Charlesville Virginia]]"
+#
+#   . adapted from stripwikicomments() Jan 2019
+#
+function stripnowiki(str,   space,s,c,i,sand,field,sep,build,re,ic) {
+
+    s = str
+
+    ic = IGNORECASE
+    IGNORECASE = 1
+
+    space = "[\n\r\t]*[ ]*[\n\r\t]*[ ]*[\n\r\t]*"
+
+    re = "[<]" space "nowiki" space "[>]"
+    gsub(re, "stripnowiki-AA-WaybackMedic", s)
+    re = "[<]" space "/" space "nowiki" space "[>]"
+    gsub(re, "stripnowiki-ZZ-WaybackMedic", s)
+
+    s = gsubs("<", "stripnowiki-FF-WaybacKmedic", s)
+    s = gsubs(">", "stripnowiki-GG-WaybacKmedic", s)
+    s = gsubs("stripnowiki-AA-WaybackMedic", "<nowiki>", s)
+    s = gsubs("stripnowiki-ZZ-WaybackMedic", "</nowiki>", s)
+
+    re = "[<]nowiki[>][^<]*[<][/]nowiki[>]"
+    c = patsplit(s, field, re, sep)
+
+    if (c == 0) {                                         # no comments
+        s = gsubs("stripnowiki-FF-WaybacKmedic", "<", s)
+        s = gsubs("stripnowiki-GG-WaybacKmedic", ">", s)
+        IGNORECASE = ic
+        return s
+    }
+
+    if ( length(sep) == 1 && empty(sep[0])) {             # whole string is a comment
+        IGNORECASE = ic
+        return ""
+    }
+
+    for (i in sep)
+        build = build sep[i]
+
+    if (!empty(build))
+        sand = build
+    else
+        sand = s
+
+    sand = gsubs("stripnowiki-FF-WaybacKmedic", "<", sand)
+    sand = gsubs("stripnowiki-GG-WaybacKmedic", ">", sand)
+
+    IGNORECASE = ic
+    return sand
+
+}
+
+#
+# stripnowikicom () - strip <nowiki> and <!-- comments -->
+#
+function stripnowikicom(str) {
+  return stripnowiki(stripwikicomments(str))
+}
+
 
 #
 # stripwikirefs() - strip wiki markup <ref></ref>
