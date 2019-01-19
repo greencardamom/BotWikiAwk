@@ -334,26 +334,33 @@ function awkenough_dump(array, prefix, i,j,c,a,k,s,sep) {
 #
 # Given a JSON-array (jsonarr) created by query_json() producing:
 #
-#    jsona["query","pages","4035","pageid"]=8978 
-# 
+#    jsona["query","pages","4035","pageid"]=8978
+#
 # Populate arr[] such that:
 #
 #    splitja(jsonarr, arr, 3, "pageid") ==>  arr["4035"]=8978
 #
 # indexn is the field # counting from left=>right - this becomes the index of arr
 # value is the far-right (last) field name of the record for which the 8978 is assigned to arr[]
+# optional offset: instead of the far-right (last) field for value, move to left by offset
+#   eg. to get the field "pages" in the above example, use an offset of 2 (count two fields left from "pageid")
+# optional lasti: this is the last field eg. "pageid" - required if using offset                
 #
 # Credit: GreenC
 #
-function splitja(jsonarr, arr, indexn, value) {
-  delete arr                 
+function splitja(jsonarr, arr, indexn, value, offset, lasti,   c,ja,a) {
+  delete arr
   for(ja in jsonarr) {
-    c = split(ja, a, SUBSEP)
-    if(a[c] == value) {
-      arr[a[indexn]] = jsonarr[ja]
+    c = split(ja, a, SUBSEP) 
+    if(lasti && offset) {
+      if(a[c-offset] == value && a[c] == lasti)  
+        arr[a[indexn]] = jsonarr[ja]
     }
+    else {
+      if(a[c] == value)                          
+        arr[a[indexn]] = jsonarr[ja]
+    }               
   }
-  return length(arr)
+  return length(arr)   
 }
-
 

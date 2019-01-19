@@ -324,55 +324,6 @@ function validate_datestamp(stamp,   vyear, vmonth, vday, vhour, vmin, vsec) {
 }
 
 #
-# stopbutton - check status of stop button page
-#
-#  . return RUN or STOP
-#  . stop button page URL defined globally as 'StopButton' in botwiki.awk BEGIN{} section
-#
-function stopbutton(button,bb,  command,butt,i) {
-
- # convert https://en.wikipedia.org/wiki/User:GreenC_bot/button
- #         https://en.wikipedia.org/w/index.php?title=User:GreenC_bot/button
-  if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
-    StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
-
-  command = "timeout 20s wget -q -O- " shquote(StopButton "&action=raw")
-  button = sys2var(command)
-
-  if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
-    return "RUN"      
-
-  butt[2] = 2; butt[3] = 20; butt[4] = 60; butt[5] = 240
-  for(i = 2; i <= 5; i++) {
-    if(length(button) < 2) {           
-      stdErr("Button try " i " - ", "n")
-      sleep(butt[i], "unix")
-      button = sys2var(command)          
-    }  
-    else break       
-  }
-
-  if(length(button) < 2) {              
-    stdErr("Aborted Button (page blank? wikipedia down?) - ", "n")        
-    return "RUN"               
-  }
-
-  if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
-    return "RUN"
-
-  stdErr("ABORTED by stop button page. " name)
-  while(bb++ < 5)  {                                          
-    bell()
-    sleep(2)
-    bell()
-    sleep(4)
-  }
-  sleep(864000, "unix")      # sleep up to 24 days .. no other way to stop GNU parallel from running
-  return "STOP"
-}
-
-
-#
 # whatistempid - return the path/tempid of a name
 #
 #   . given first field of an index file, return second field
@@ -551,4 +502,126 @@ function isembedded(tl) {
     return 1
   return 0
 }
+
+#
+# stopbutton - check status of stop button page
+#
+#  . return RUN or STOP
+#  . stop button page URL defined globally as 'StopButton' in botwiki.awk BEGIN{} section
+#
+function stopbutton(button,bb,  command,butt,i) {
+
+ # convert https://en.wikipedia.org/wiki/User:GreenC_bot/button
+ #         https://en.wikipedia.org/w/index.php?title=User:GreenC_bot/button
+  if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
+    StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
+
+  command = "timeout 20s wget -q -O- " shquote(StopButton "&action=raw")
+  button = sys2var(command)
+
+  if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
+    return "RUN"      
+
+  butt[2] = 2; butt[3] = 20; butt[4] = 60; butt[5] = 240
+  for(i = 2; i <= 5; i++) {
+    if(length(button) < 2) {           
+      stdErr("Button try " i " - ", "n")
+      sleep(butt[i], "unix")
+      button = sys2var(command)          
+    }  
+    else break       
+  }
+
+  if(length(button) < 2) {              
+    stdErr("Aborted Button (page blank? wikipedia down?) - ", "n")        
+    return "RUN"               
+  }
+
+  if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
+    return "RUN"
+
+  stdErr("ABORTED by stop button page. " name)
+  while(bb++ < 5)  {                                          
+    bell()
+    sleep(2)
+    bell()
+    sleep(4)
+  }
+  sleep(864000, "unix")      # sleep up to 24 days .. no other way to stop GNU parallel from running
+  return "STOP"
+}
+
+#
+# Upload page to Wikipedia
+#
+#   Example:
+#      upload(fp, a[i], "Convert SHORTDESC magic keyword to template (via [[User:GreenC bot/Job 9|shorty]] bot)", G["log"], BotName)
+#
+function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,command,result,debug,article,i,re,dest,tries) {
+
+    debug = 0  # 0 = off, 1 = list discoveries don't upload, 2 = print stderr msgs
+
+    name = strip(wikiname)
+
+    if(debug == 1) {
+      stdErr("Found " name)
+      print name >> logdir "discovered"
+      return
+    }
+
+    # {{bots|deny=<botlist>}}
+    if(match(wikisource, /[{][{][ ]*[Bb]ots[ \t]*[\n]?[ \t]*[|][^}]*[}]/, dest)) {
+      re = regesc3(botname) "bot"
+      if(dest[0] ~ re) {
+        print name " ---- Error: Bot deny" >> logdir "error"
+        return
+      }
+    }
+
+    if(debug == 2) printf("  startbutton - ")
+    if(stopbutton() != "RUN") {
+      print name >> logdir "error"
+      return
+    }
+    if(debug == 2) print "endbutton"
+
+    article = logdir "article"
+    print wikisource > article
+    close(article)
+
+    if(!empty(name)) {
+
+      tries = 3
+      for(i = 1; i <= tries; i++) {
+
+        command = "timeout 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l " lang
+        if(debug == 2) stdErr(command)
+        result = sys2var(command)
+
+        if(result ~ /[Ss]uccess/) {
+          if(debug == 2) stdErr(botname ".awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
+          print name >> logdir "discovered"
+          close(logdir "discovered")
+          break
+        }
+        else if(result ~ /[Nn]o[-]?[Cc]hange/ ) {
+          if(debug == 2) stdErr(botname ".awk: wikiget status: No change. " name)
+          print name >> logdir "nochange"
+          close(logdir "nochange")
+          break
+        }
+        else if(i == 3) {
+          if(debug == 2) stdErr(botname ".awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " name)
+          print name " ---- upload fail: " result >> logdir "error"
+          close(logdir "error")
+          break
+        }
+
+        if(debug == 2) printf("Try " i ": " name " - ")
+        sleep(2)
+      }
+    }
+    removefile(article)
+}
+
 

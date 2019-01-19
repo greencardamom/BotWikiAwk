@@ -43,7 +43,7 @@ BEGIN {
   wcre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]([Ww][Ww][Ww][.])?[Ww][Ee][Bb][Cc][Ii][Tt][Aa][Tt][Ii][Oo][Nn][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
   # Archive.is
-  isre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww]?[Ww]?[Ww]?[.]?[Aa][Rr][Cc][Hh][Ii][Vv][Ee][.]([Tt][Oo][Dd][Aa][Yy]|[Ii][Ss]|[Ll][Ii]|[Ff][Oo])[:]?[8]?[04]?[48]?[30]?[/]"
+  isre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww]?[Ww]?[Ww]?[.]?[Aa][Rr][Cc][Hh][Ii][Vv][Ee][.]([Tt][Oo][Dd][Aa][Yy]|[Ii][Ss]|[Ll][Ii]|[Ff][Oo]|[Mm][Dd]|[Vv][Nn]|[Pp][Hh])[:]?[8]?[04]?[48]?[30]?[/]"
 
   # Library of Congress
   locgovre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Ee][Bb][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Ll][Oo][Cc][.][Gg][Oo][Vv][:]?[8]?[04]?[48]?[30]?"
