@@ -33,8 +33,11 @@ BEGIN {
   # 1. Stop button page - your stop button page
   StopButton = "https://en.wikipedia.org/wiki/User:name/button"
 
-  # 2. User page - your user page
-  UserPage = "http://en.wikipedia.org/wiki/User:name"
+  # 2a. Your user page
+  UserPage = "https://en.wikipedia.org/wiki/User:GreenC_bot"
+
+  # 2b. Your email address (for notifying when stop button is pressed when running from cron etc)
+  UserEmail = ""
 
   # 3. Paths and agent
   #  . BotName defined in the BEGIN{} section of calling programs (bug, driver, project etc)
@@ -65,6 +68,7 @@ BEGIN {
   Exe["tac"] = ...
   Exe["timeout"] = ... 
   Exe["wget"] = ...
+  Exe["mailx"] = ...
 
   # 5b. driver.awk
   Exe["grep"] = ...
@@ -547,7 +551,8 @@ function stopbutton(button,bb,  command,butt,i) {
     bell()
     sleep(4)
   }
-  sleep(864000, "unix")      # sleep up to 24 days .. no other way to stop GNU parallel from running
+  # sleep(864000, "unix")          # sleep up to 24 days .. no other way to stop GNU parallel from running
+  sleep(600, "unix")               # sleep 10 minutes .. for running from cron
   return "STOP"
 }
 
@@ -555,7 +560,7 @@ function stopbutton(button,bb,  command,butt,i) {
 # Upload page to Wikipedia
 #
 #   Example:
-#      upload(fp, a[i], "Convert SHORTDESC magic keyword to template (via [[User:GreenC bot/Job 9|shorty]] bot)", G["log"], BotName)
+#      upload(fp, a[i], "Convert SHORTDESC magic keyword to template (via [[User:GreenC bot/Job 9|shorty]] bot)", G["log"], BotName, "en")
 #
 function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,command,result,debug,article,i,re,dest,tries) {
 
@@ -573,14 +578,16 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
     if(match(wikisource, /[{][{][ ]*[Bb]ots[ \t]*[\n]?[ \t]*[|][^}]*[}]/, dest)) {
       re = regesc3(botname) "bot"
       if(dest[0] ~ re) {
-        print name " ---- Error: Bot deny" >> logdir "error"
+        print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Error: Bot deny" >> logdir "error"
         return
       }
     }
 
     if(debug == 2) printf("  startbutton - ")
     if(stopbutton() != "RUN") {
-      print name >> logdir "error"
+      print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Stop Button" >> logdir "error"
+      if(!empty(UserEmail) && !empty(Exe["mailx"]))
+        sys2var(Exe["mailx"] " -s \"NOTICE: " botname " bot halted by stop button.\" " UserEmail " < /dev/null")
       return
     }
     if(debug == 2) print "endbutton"
@@ -612,7 +619,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
         }
         else if(i == 3) {
           if(debug == 2) stdErr(botname ".awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " name)
-          print name " ---- upload fail: " result >> logdir "error"
+          print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- upload fail: " result >> logdir "error"
           close(logdir "error")
           break
         }
