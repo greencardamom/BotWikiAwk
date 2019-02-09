@@ -36,7 +36,7 @@ else
 fi
 
 # Optional: add a hardcoded path to awk
-#  awkn="/data/project/local/bin/gawk"
+#  awkn="/usr/bin/gawk"
 
 awkloc=$("$awkn" --version)
 substr="GNU Awk"

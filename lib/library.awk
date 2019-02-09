@@ -1078,13 +1078,13 @@ function gsubs(pat, rep, str,    out, len, i, a, l) {
 #   Notes
 #
 #   . The 'counter' ('i' in the example) is assumed initialized to 1 in the for-loop. If
-#     different, pass the start value as third argument eg.
+#     different, pass a start value in the fourth argument eg.
 #             for(i = 5; i <= splitn("test.txt", a, i, 5); i++)
 #   . If not in a for-loop the counter is not needed eg.
 #             c = splitn("test.txt", a)
 #   . 'fp' can be a filename, or a string of literal text. If 'fp' does not contain a '\n'
 #     it will search for a filename of that name; if none found it will treat as a
-#     literal string. For safety, add a '\n' to end of string. eg.
+#     literal string. If it means to be a string, for safety add a '\n' to end. eg.
 #             for(i = 5; i <= splitn(ReadDB(key) "\n", a, i); i++)
 #       
 #
@@ -1128,10 +1128,14 @@ function splitn(fp, arrSP, counter, start,    c,j,dSP,i) {
 #
 # wc() - wc a file (number of lines)
 #
-#    . to wc a string splitc(s, "\n")    
-#    . to wc an array length(a)    
+#    . to wc a string splitc(s, "\n")
+#    . to wc an array length(a)
 #
-function wc(fp,  a) { return splitn(fp,a) }
+function wc(fp,  a) {
+  if(checkexists(fp))
+    return splitn(fp,a)
+  return 0
+}
 
 #
 # sortstring() - given a string, return the characters in a sorted_in 'order'

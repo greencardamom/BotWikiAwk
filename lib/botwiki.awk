@@ -386,74 +386,135 @@ function bell(  a,i,ok) {
 }
 
 #
-# deflate() - Collapse article - encode select common-things so they don't mess with parsing 
+# Encode certain templates to plain-text. Map encodings to global tables so they can be restored by inflate()
 #
-#  . create global arrays InnerDd[], InnerId[] and InnerSd[]
+#    eg. {{cite web |date={{date|1970}} | title=Year}} --> {{cite web |date=DefNonOrdGenAa1.1 | title=Year}}
+#        DefNonOrdGenAa["DefNonOrdGenAa1.1"] = "{{date|1970}}"
 #
-function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTemplate) {
+#  There are three tables DefOrdGenAa[], DefNonOrdGenAa[], DefNonOrdCiteAa[]. The word "Def" means deflate.
+#     The words "Ord" and "NonOrd" mean "Ordered" and "NonOrdered". The words "Gen" and "Cite" mean "Generic".
+#     Thus DefOrdGenAa means in the Deflate proc, an Ordered/Generic table, with identifier Aa.  
+#
+#  Tables can be "Ordered" or "NonOrdered". Ordered tables are exspensive to create, they are only used when later   
+#     needed to identify the specific encoded string in the wikisource. Most are "NonOrdered" as the encoding exists 
+#     merely to convert embedded templates to plain text to make regex parsing easier. 
+#  Tables can be "Generic" or "Cite". Generic means the encoding is done on the entire wikisource. Cite means the 
+#     encoding is limited to a certain sub-set of citation argument names.
+#
+#  Encoding format: given DefOrdGenAa1.1, the first 1 is the position in the split list (see below for DefOrdGenAa 
+#     eg. "=" is 1, "!" is 2, etc). The .1 is the count in the article. 
+#     So if there were 5 {{!}} they would be coded DefOrdGenAa2.1z -> DefOrdGenAa2.5z .. the "z" helps since 2.1 and 2.11
+#     are ambiguous in the wikisource (is the trailing "1" part of the source or code?). The "z" is an end-of-string marker.
 
-  ReSpace = "[\n\r\t]*[ ]*[\n\r\t]*[ ]*[\n\r\t]*"
+function deflate(article,opt,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTemplate,ReEmbedded,ti) {
+
+  ti = IGNORECASE
+  IGNORECASE = 1 
+
+  ReSpace    = "[\n\r\t]*[ ]*[\n\r\t]*[ ]*[\n\r\t]*"
   ReTemplate = "[{]" ReSpace "[{][^}]+[}]" ReSpace "[}]"
+  ReEmbedded = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
 
   # Collapse newlines 
   gsub("\n"," zzCRLFzz",article)  
 
-  # Replace "{{date|data}}" with "dateZzPp1" and populate global array InnerDd["dateZzPp1"] = "{{date|data}}"
-  re = "[{]" ReSpace "[{]" ReSpace "date[^}]*[}]" ReSpace "[}]"
-  c = patsplit(article, field, re, sep)
-  while(i++ < c) {
-    re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
-    if(field[i] ~ re)
-      continue
-    codename = "dateZzPp" i "z"
-    InnerDd[codename] = field[i]
-    field[i] = codename
-  }
-  if(c > 0) article = unpatsplit(field, sep)
+  # 1. Ordered/Generic
+  #    "{{template|data}}" --> "DefOrdGenAa1.1" and populate global array DefOrdGenAa["DefOrdGenAa1.1"] = "{{template|data}}"
 
-  # Replace "|id={{template|data}}" with "|id=idQqYy1" and populate global array InnerId["idQqYy1"] = "|id={{template|data}}"
-  # Repeat for other commonly templated arguments
-  split("id|ref|url|author|title|work|publisher|contribution|quote|website|editor|series", loopy, /[|]/)
+    # Caution: add new entries to end of split string - order is relevant
+
+  split("=|!", loopy, /[|]/)
+
   for(j in loopy) {
-    i = c = 0
-    re = "[|]" ReSpace loopy[j] ReSpace "[=]" ReSpace ReTemplate
+    re = "[{]" ReSpace "[{]" ReSpace regesc3(loopy[j]) ReSpace "[}]" ReSpace "[}]|[{]" ReSpace "[{]" ReSpace regesc3(loopy[j]) ReSpace "[|][^}]*[}]" ReSpace "[}]"
     c = patsplit(article, field, re, sep)
-    while(i++ < c) {
-      if(match(field[i], ReTemplate, inner) ) {
-        re = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
-        if(field[i] ~ re)
+    if(c > 0) {
+      for(i = 1; i <= c; i++) {
+        if(field[i] ~ ReEmbedded)
           continue
-        codename = loopy[j] "QqYy" i "z"
-        field[i] = gsubs(inner[0], codename, field[i])
-        InnerId[codename] = inner[0]
+        codename = "DefOrdGenAa" j "." i "z"
+        DefOrdGenAa[codename] = field[i]
+        field[i] = codename
       }
+      article = unpatsplit(field, sep)
     }
-    if(c > 0) article = unpatsplit(field, sep)
   }
 
-  # Replace "{{template}}" with "aAxXQq1" and populate global array InnerSd["aAxXQq1"] = "{{template}}"
-  # Repeat for other common templates
-  i = 0
-  split("{{=}}|{{!}}|{{'}}|{{snd}}|{{spnd}}|{{sndash}}|{{spndash}}|{{Spaced en dash}}|{{spaced en dash}}|{{·}}|{{•}}|{{\\}}|{{en dash}}|{{em dash}}|{{-'}}", loopy, /[|]/)
-  for(j in loopy) {
-    i++
-    codename = "aAxXQq" i "z"
-    InnerSd[codename] = loopy[j]
-    article = gsubs(InnerSd[codename], codename, article)
+  # 2. Non-ordered/Generic
+  #    "{{template|data}}" --> "DefNonOrdGenAa1.1" and populate global array DefNonOrdGenAa["DefNonOrdGenAa1.1"] = "{{template|data}}"
+
+  listre = "("
+
+  # Each listre has a trailing "|"
+
+  # Inline templates
+  listre = listre regesc3("'") "|snd|spnd|sndash|spndash|spaced en dash|" regesc3("·") "|" regesc3("•") "|" regesc3("\\") "|en dash|em dash|" regesc3("-'") "|"
+  # {{Date}}
+  listre = listre "date|"
+  # {{Subscription required}}
+  listre = listre "Locked content|Pay|Paywall|Premium access|Premium content|Required subscription|Requires subscription|Restricted access|Subreq|Subscribers only|Subscription|Subscription needed|Subscription only|Subscription required|Subscription-required|Subscriptionrequired|"
+  # {{Registration required}}
+  listre = listre "Reg|Registration|Registration needed|Registration-required|Regreq|"
+  # {{HighBeam}}
+  listre = listre "highbeam"
+
+  # last entry has no trailing "|"
+
+  listre = listre ")"
+
+  re = "[{]" ReSpace "[{]" ReSpace listre ReSpace "[}]" ReSpace "[}]|[{]" ReSpace "[{]" ReSpace listre ReSpace "[|][^}]*[}]" ReSpace "[}]"
+  c = patsplit(article, field, re, sep)
+  if(c > 0) {
+    for(i = 1; i <= c; i++) {
+      if(field[i] ~ ReEmbedded)
+        continue
+      codename = "DefNonOrdGenAa1." i "z"
+      DefNonOrdGenAa[codename] = field[i]
+      field[i] = codename
+    }
+    article = unpatsplit(field, sep)
   }
+ 
+  # 3. Non-ordered/Cite
+  #    Encode given templates within citations with no ordering. eg:
+  #    "|id={{template|data}}" --> "|id=DefNonOrdCite1.1" and populate global array DefNonOrdCite["DefNonOrdCite1.1"] = "|id={{template|data}}"
+
+  listre = "(id|ref|url|author|title|work|publisher|contribution|quote|website|editor|series)"
+
+  re = "[|]" ReSpace listre ReSpace "[=]" ReSpace ReTemplate               
+  c = patsplit(article, field, re, sep)
+  if(c > 0) {
+    for(i = 1; i <= c; i++) {
+      if(match(field[i], ReTemplate, inner) ) {
+        if(field[i] ~ ReEmbedded)
+          continue
+        codename = "DefNonOrdCiteAa1." i "z"
+        field[i] = gsubs(inner[0], codename, field[i])
+        DefNonOrdCiteAa[codename] = inner[0]
+      }
+      article = unpatsplit(field, sep)
+    }
+  }
+
+  # 4. Ordered/Cite
+  #  None needed yet
 
   # Within URLs, convert Wikipedia magic characters to percent-encoded
 
   if(opt == "magic") {
-    c = patsplit(article, field, "[Hh][Tt][Tt][Pp][^ <|\\]}\n\t]*[^ <|\\]}\n\t]", sep)
-    for(i = 1; i <= c; i++) {
-      if(field[i] ~ /aAxXQq1z/)              # aAxXQq1z is {{=}} is "=" is %3D
-        field[i] = gsubs("aAxXQq1z", "%3D", field[i])
-      if(field[i] ~ /aAxXQq2z/)              # aAxXQq2z is {{!}} is "|" is %7C
-        field[i] = gsubs("aAxXQq2z", "%7C", field[i])
-    }
-    if(c > 0) article = unpatsplit(field, sep)
+    c = patsplit(article, field, "http[^ <|\\]}\n\t]*[^ <|\\]}\n\t]", sep)
+    if(c > 0) {
+      for(i = 1; i <= c; i++) {
+        if(match(field[i], /DefOrdGenAa1[.][0-9]{1,2}z/, dest))   # DefOrdGenAa1.?z is {{=}} is "=" is %3D
+          field[i] = gsubs(dest[0], "%3D", field[i])
+        if(match(field[i], /DefOrdGenAa2[.][0-9]{1,2}z/, dest))   # DefOrdGenAa2.?z is {{!}} is "|" is %7C
+          field[i] = gsubs(dest[0], "%7C", field[i])
+      }
+      article = unpatsplit(field, sep)
+    }             
   }
+
+  IGNORECASE = ti
 
   return article
 
@@ -463,12 +524,13 @@ function deflate(article,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTe
 #
 function inflate(articlenew, i) {
 
-    for(i in InnerSd)
-      articlenew = gsubs(i, InnerSd[i], articlenew)
-    for(i in InnerId)
-      articlenew = gsubs(i, InnerId[i], articlenew)
-    for(i in InnerDd)
-      articlenew = gsubs(i, InnerDd[i], articlenew)
+    for(i in DefOrdGenAa)
+      articlenew = gsubs(i, DefOrdGenAa[i], articlenew)
+    for(i in DefNonOrdGenAa)
+      articlenew = gsubs(i, DefNonOrdGenAa[i], articlenew)
+    for(i in DefNonOrdCiteAa)
+      articlenew = gsubs(i, DefNonOrdCiteAa[i], articlenew)
+
     gsub(/[ ]zzCRLFzz/,"\n",articlenew)
 
     return articlenew

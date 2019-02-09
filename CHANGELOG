@@ -1,0 +1,4 @@
+# Changes in reverse chronological order
+#
+# 0.45 Feb 09 2019 - rewrite inflate() and deflate() (see code notes)
+                     fix wc()
