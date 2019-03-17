@@ -1025,6 +1025,22 @@ function subs(pat, rep, str,    len, i) {
     return str
 }
 
+#
+# gsubi() - same as gsub() but leave source string unmodified and return new string
+#
+#   Example:
+#      s = "Plain"
+#      print gsubi("^P", "p", s) " = " s   #=> plain = Plain
+#
+function gsubi(pat, rep, str,   safe) {
+
+    if (!length(pat) || !length(str))
+        return
+    safe = str
+    gsub(pat, rep, safe)
+    return safe
+
+}
 
 #
 # gsubs() - like gsub() but literal non-regex

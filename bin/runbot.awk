@@ -129,8 +129,12 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
     gridlogJsub(fid)
   }
 
-  system("")
-  sleep(1)
+  # Flush Grid buffers by creating a temp file in the directory
+  chDir(Project["meta"])
+  system("touch index.temp.42")
+  system("rm index.temp.42")
+  chDir(cwd)
+  sleep(4)
 
   # ./project -j -p $1
   command = Exe["project"] " -j -p " pid
@@ -160,7 +164,7 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
 function gridfireJsub(auth, drymode, pid,    i,a,command) {
 
   for(i = 1; i <= splitn(auth, a, i); i++) {
-    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -d " drymode " -p " pid " -n \"" shquote(a[i]) "\""
+    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -d " drymode " -p " shquote(pid) " -n \"" shquote(a[i])  "\""  # an extra "" is needed around -n 
     print command
     sys2var(command)
     sleep(_delay, "unix")

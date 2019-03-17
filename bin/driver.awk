@@ -84,7 +84,10 @@ BEGIN {
 
 # Create temp directory
   nano = substr(sys2var( Exe["date"] " +\"%N\""), 1, 6)
-  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano randomnumber(99) "/"
+  rndn = randomnumber(99)
+  if(length(rndn) == 1)
+    rndn = "0" rndn
+  wm_temp = Project["data"] "wm-" sys2var( Exe["date"] " +\"%m%d%H%M%S\"") nano rndn "/"
   if(!mkdir(wm_temp)) {
     stdErr("driver.awk: unable to create temp file " wm_temp)
     exit
