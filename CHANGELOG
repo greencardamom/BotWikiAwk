@@ -1,8 +1,8 @@
 # Changes in reverse chronological order
 #
 # 0.47 Mar 17      - adjust randomnumber() in driver.awk
-                     add "Flush Grid buffers" to runbot.awk
-                     add gsubi() to library.awk
-                     remove infalte() and deflate() from skeleton-templates.awk (now in botwiki.awk) 
+#                     add "Flush Grid buffers" to runbot.awk
+#                     add gsubi() to library.awk
+#                     remove infalte() and deflate() from skeleton-templates.awk (now in botwiki.awk) 
 # 0.45 Feb 09 2019 - rewrite inflate() and deflate() (see code notes)
-                     fix wc()
+#                     fix wc()
