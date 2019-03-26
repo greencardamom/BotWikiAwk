@@ -36,11 +36,6 @@ BEGIN {
   _pwdC = split(ENVIRON["PWD"],_pwdA,"/")
   BotName = _pwdA[_pwdC]
 
-  # Multitasking engine method
-  _engine = 0  # 0 = GNU parallel (for single computer with multi-core CPU)
-               # 1 = Toolforge grid job-array (Experimental! Use caution)
-               # 2 = Toolforge grid jsub (adjustable speed 1 worker every x seconds)
-
   # Engine settings
   _delay = "0.5"      # GNU parallel: delay between each worker startup
   _procs = "20"       # GNU parallel: max number of parallel workers at a time
@@ -70,7 +65,7 @@ BEGIN {
 
 function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,acount,avgsec,jsjid) {
 
-  if(_engine == 0 && ! checkexe(Exe["parallel"], "parallel"))
+  if(Engine == 0 && ! checkexe(Exe["parallel"], "parallel"))
     exit
   if(! checkexe(Exe["driver"], "driver") || ! checkexe(Exe["mv"], "mv") || ! checkexe(Exe["project"], "project") || ! checkexe(Exe["date"], "date") )
     exit
@@ -97,10 +92,10 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
   sys2var("./clearlogs " fid)
   chDir(cwd)
 
-  if(_engine == 0) {
+  if(Engine == 0) {
 
     # parallel -a meta/$1/$2 -r --delay 0.5 --trim lr -k -j 10 ./driver -d n -p $1 -n {}
-    command = Exe["parallel"] " -a " Project["meta"] fid " -r --delay " _delay " --trim lr -k -j " _procs " " Exe["driver"] " -d " drymode " -p " pid " -n {}"
+    command = Exe["parallel"] " -a " Project["meta"] fid " -r --delay " _delay " --trim lr -k -j " _procs " " Exe["driver"] " -e " Engine " -d " drymode " -p " pid " -n {}"
 
     while ( (command | getline fish) > 0 ) {
       if ( ++scale == 1 )     {
@@ -112,15 +107,14 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
     }
     close(command)
   }
-  else if(_engine == 1) {
+  else if(Engine == 1) {
     if (!checkexists(Project["meta"] "gridlog"))
         mkdir(Project["meta"] "gridlog")
     tup(gridfireArray(Project["meta"] fid, drymode, pid), jsjid)
     gridwatchArray(jsjid[2])
     gridlogArray(fid, jsjid[2], pid, jsjid[1])
-    print "Job completed."
   }
-  else if(_engine == 2) {
+  else if(Engine == 2) {
     _delay = _griddelay
     if(!checkexists(Project["meta"] "gridlog"))
       mkdir(Project["meta"] "gridlog")
@@ -128,20 +122,25 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
     gridwatchJsub(jsjid)
     gridlogJsub(fid)
   }
+  else {
+    stdErr("runbot.awk: Unknown engine type '" Engine "' for use with runbot")
+    exit
+  }
 
-  # Flush Grid buffers by creating a temp file in the directory
-  chDir(Project["meta"])
-  system("touch index.temp.42")
-  system("rm index.temp.42")
-  chDir(cwd)
-  sleep(4)
+
+  # Flush Grid buffers
+  if(Engine == 1 || Engine == 2) {
+    chDir(Project["meta"])
+    flushGrid(Project["meta"])
+    chDir(cwd)
+  }
 
   # ./project -j -p $1
   command = Exe["project"] " -j -p " pid
   sys2var(command)
 
   system("")
-  sleep(1)
+  sleep(1, "unix")
 
   # mv meta/$1/index.temp meta/$1/index.temp.$2
   if(checkexists(Project["meta"] "index.temp" ))
@@ -152,9 +151,9 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
   datef = sys2var(Exe["date"] " +'%s'") - dateb
   acount = wc(Project["meta"] fid)
   printf "\nProcessed " acount " articles in " (datef / 60) " minutes. Avg " (datef / acount) " sec each"
-  if(_engine == 0)
+  if(Engine == 0)
     print " (delay = " _delay "sec ; procs = " _procs  ")"
-  else if(_engine == 1 || _engine == 2)
+  else if(Engine == 1 || Engine == 2)
     print
 }
 
@@ -164,7 +163,7 @@ function main(pid,fid,dry,   dateb,cwd,command,drymode,fish,scale,datee,datef,ac
 function gridfireJsub(auth, drymode, pid,    i,a,command) {
 
   for(i = 1; i <= splitn(auth, a, i); i++) {
-    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -d " drymode " -p " shquote(pid) " -n \"" shquote(a[i])  "\""  # an extra "" is needed around -n 
+    command = "jsub -N tools.botwikiawk-" BotName "-" i " -o " Project["meta"] "gridlog" " -quiet -j y -cwd -once -- " Exe["driver"] " -e " Engine " -d " drymode " -p " shquote(pid) " -n \"" shquote(a[i])  "\""  # an extra "" is needed around -n 
     print command
     sys2var(command)
     sleep(_delay, "unix")
@@ -178,7 +177,7 @@ function gridwatchJsub(jobsize,  op) {
   printf "Waiting on " jobsize " workers "
 
   while(1) {
-    op = sys2var("qstat -j tools.botwikiawk-" BotName "-? 2>/dev/null" )
+    op = sys2var("qstat -j tools.botwikiawk-" BotName "-* 2>/dev/null" )
     if(empty(strip(op)))
       break
 #    print "\nList of processes still running on grid ..."
@@ -199,6 +198,9 @@ function gridlogJsub(fid,  cwd,a,b,i,j,logname) {
     exit
   }
 
+  # Flush Grid buffers
+  flushGrid(Project["meta"] "gridlog")
+
   # generate log name incrimenting number ie. auth-runbot-1.log .. auth-runbot-2.log etc..
   if(checkexists(fid "-runbot-1.log")) {
     delete b
@@ -213,7 +215,7 @@ function gridlogJsub(fid,  cwd,a,b,i,j,logname) {
   else
     logname = fid "-runbot-1.log"
 
-  print "\nCreating log " Project["meta"] "gridlog/" logname
+  print "Creating log " Project["meta"] "gridlog/" logname
 
   # create log file
   delete a
@@ -245,9 +247,9 @@ function gridfireArray(auth, drymode, pid,   driver,procname,logdir,jobsize,comm
   if(!empty(driver)) {
 
     # standard settings found in /usr/bin/jsub plus the -t job-array, -j y, and -cwd .. need -once?
-    # /usr/bin/qsub -t 1-5:1 -j y -o /data/project/botwikiawk/BotWikiAwk/bots/accdate/meta/accdate20180614.0001-0010/gridlog -M tools.botwikiawk@tools.wmflabs.org -N test3 -hard -l h_vmem=524288k -l release=trusty -q task -b yes /mnt/nfs/labstore-secondary-tools-project/botwikiawk/BotWikiAwk/bots/accdate/test.awk
+    # /usr/bin/qsub -t 1-5:1 -j y -o /data/project/botwikiawk/BotWikiAwk/bots/accdate/meta/accdate20180614.0001-0010/gridlog -M tools.botwikiawk@tools.wmflabs.org -N test3 -hard -l h_vmem=524288k -q task -b yes /mnt/nfs/labstore-secondary-tools-project/botwikiawk/BotWikiAwk/bots/accdate/test.awk
 
-    command = "/usr/bin/qsub -t 1-" jobsize ":1 -j y -o " logdir " -M tools.botwikiawk@tools.wmflabs.org -N " procname " -hard -l h_vmem=524288k -l release=trusty -cwd -q task -b yes " driver " -d " shquote(drymode) " -p " shquote(pid) " -n _gridarray -a " shquote(auth)
+    command = "/usr/bin/qsub -t 1-" jobsize ":1 -j y -o " logdir " -M tools.botwikiawk@tools.wmflabs.org -N " procname " -hard -l h_vmem=100000k -cwd -q task -b yes " driver " -d " shquote(drymode) " -p " shquote(pid) " -n _gridarray -a " shquote(auth)
 
     # Your job-array 432577.1-5:1 ("test3") has been submitted
     op = sys2var(command)
@@ -270,7 +272,7 @@ function gridfireArray(auth, drymode, pid,   driver,procname,logdir,jobsize,comm
 #
 function gridwatchArray(jid,  op,re) {
 
-  print "Job-array " jid " submitted."
+  print "Job-array " jid " submitted. Status: qstat -j " jid
 
   re = "^[ ]" jid
   while(1) {
@@ -313,8 +315,7 @@ function gridlogArray(fid,jid,pid,jobsize,   cwd,a,b,c,fn,i,j,z,logname) {
   else
     logname = fid "-runbot-1.log"
 
-
-  printf "Waiting on " jobsize " workers "
+  printf "\nWaiting on " jobsize " workers "
 
  # monitor logs - this can deadlock so it's important driver.awk output something to stderr
  #                for each worker even when it does nothing else - such as the wikiname processed
@@ -331,8 +332,12 @@ function gridlogArray(fid,jid,pid,jobsize,   cwd,a,b,c,fn,i,j,z,logname) {
     sleep(5, "unix")
     printf "."
   }
+  print
 
-  print "\nCreating log " Project["meta"] "gridlog/" logname
+  # Flush Grid buffers
+  flushGrid(Project["meta"] "gridlog")
+
+  print "Creating log " Project["meta"] "gridlog/" logname
 
  # aggregate log files into one, remove individuals
 
@@ -348,6 +353,27 @@ function gridlogArray(fid,jid,pid,jobsize,   cwd,a,b,c,fn,i,j,z,logname) {
     removefile2(b[j])
   }
   chDir(cwd)
+
+}
+
+#
+# Flush grid buffers by creating a temp file and sleeping
+#
+function flushGrid(dir,  i,s) {
+
+  s = 4  # sleep seconds
+
+  printf "Flushing Grid buffers [" dir "] "
+  for(i=1;i<=2;i++) {
+    printf "."
+    print "0" > "temp.42"
+    close("temp.42")
+    sleep(s, "unix")
+    printf "."
+    system("rm temp.42")
+    sleep(s, "unix")
+  }
+  print
 
 }
 

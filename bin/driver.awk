@@ -45,7 +45,7 @@ BEGIN {
   _cliff_seed = "0.00" splitx(sprintf("%f", systime() * 0.000001), ".", 2)
 
   Optind = Opterr = 1
-  while ((C = getopt(ARGC, ARGV, "hd:p:n:a:m:")) != -1) {
+  while ((C = getopt(ARGC, ARGV, "hd:p:n:a:m:e:")) != -1) {
       opts++
       if(C == "p")                 #  -p <project>   Use project name. Default in project.cfg
         pid = verifypid(Optarg)
@@ -55,6 +55,8 @@ BEGIN {
         dryrun = verifyval(Optarg)
       if(C == "a")                 #  -a <filename>  Optional auth filename if running via Toolforge
         authfile = verifyval(Optarg)
+      if(C == "e")                 #  -e <0|1|2>     Optional engine type if running via Toolforge
+        engine = verifyval(Optarg)
 
       if(C == "h") {
         usage()
@@ -107,8 +109,7 @@ BEGIN {
 
 # Create index.temp entry (re-assemble when done with "project -j")
 
-  print namewiki "|" wm_temp >> Project["indextemp"]
-  close(Project["indextemp"])
+  parallelWrite(namewiki "|" wm_temp, Project["indextemp"], engine)
 
 # Run project and save result to /wm_temp/article.BotName.txt
 
@@ -120,7 +121,8 @@ BEGIN {
   changes = sys2var(command)
   if(changes) {
     stdErr("    Found " changes " change(s) for " namewiki)
-    sendlog(Project["discovered"], namewiki, "")
+    parallelWrite(namewiki, Project["discovered"], engine)
+    # sendlog(Project["discovered"], namewiki, "")
   }
   else {
     if(checkexists(wm_temp "article." BotName ".txt")) {
@@ -141,13 +143,15 @@ BEGIN {
 
     if(result ~ /[Ss]uccess/) {
       prnt("    driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " namewiki)
-      print namewiki >> Project["discovereddone"]
-      close(Project["discovereddone"])
+      parallelWrite(namewiki, Project["discovereddone"], engine)
+      # print namewiki >> Project["discovereddone"]
+      # close(Project["discovereddone"])
     }
     else if(result ~ /[Nn]o[-][Cc]hange/ ) {
       prnt("    driver.awk: wikiget status: No change. " namewiki)
-      print namewiki >> Project["discoverednochange"]
-      close(Project["discoverednochange"])
+      parallelWrite(namewiki, Project["discoverednochange"], engine)
+      # print namewiki >> Project["discoverednochange"]
+      # close(Project["discoverednochange"])
     }
 
     else {  # Try 2
@@ -158,18 +162,21 @@ BEGIN {
 
       if(result ~ /[Ss]uccess/) {
         prnt("    driver.awk: wikiget status: Successful. Page uploaded to Wikipedia. " namewiki)
-        print namewiki >> Project["discovereddone"]
-        close(Project["discovereddone"])
+        parallelWrite(namewiki, Project["discovereddone"], engine)
+        # print namewiki >> Project["discovereddone"]
+        # close(Project["discovereddone"])
       }
       else if(result ~ /[Nn]o[-][Cc]hange/ ) {
         prnt("    driver.awk: wikiget status: No change. " namewiki)
-        print namewiki >> Project["discoverednochange"]
-        close(Project["discoverednochange"])
+        parallelWrite(namewiki, Project["discoverednochange"], engine)
+        # print namewiki >> Project["discoverednochange"]
+        # close(Project["discoverednochange"])
       }
       else {
         prnt("    driver.awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " namewiki)
-        print namewiki >> Project["discoverederror"]
-        close(Project["discoverederror"])
+        parallelWrite(namewiki, Project["discoverederror"], engine)
+        # print namewiki >> Project["discoverederror"]
+        # close(Project["discoverederror"])
       }
     }
   }
@@ -182,8 +189,9 @@ BEGIN {
 function prnt(msg) {
   if( length(msg) > 0 ) {
     stdErr(msg)
-    print(strftime("%Y%m%d %H:%M:%S") " " msg) >> Home "driver.log"
-    close(Home "driver.log")
+    parallelWrite(strftime("%Y%m%d %H:%M:%S") " " msg, Home "driver.log", engine)
+    # print(strftime("%Y%m%d %H:%M:%S") " " msg) >> Home "driver.log"
+    # close(Home "driver.log")
   }
 }
 

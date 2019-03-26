@@ -34,23 +34,31 @@ BEGIN {
   StopButton = "https://en.wikipedia.org/wiki/User:name/button"
 
   # 2a. Your user page
-  UserPage = "https://en.wikipedia.org/wiki/User:GreenC_bot"
+  UserPage = "https://en.wikipedia.org/wiki/User:name"
 
   # 2b. Your email address (for notifying when stop button is pressed when running from cron etc)
   UserEmail = ""
 
-  # 3. Paths and agent
-  #  . BotName defined in the BEGIN{} section of calling programs (bug, driver, project etc)
+  # 3. Paths, agent, and engine
+  #   . BotName defined in the BEGIN{} section of calling programs (bug, driver, project etc)
+  #   . Home path should end with a trailing "/"
+  #   . Engine describes how parallel/concurrent processing will be handled
+  #      0 = none or GNU Parallel on a single computer ie. not on Toolforge
+  #      1 = Toolforge Array (single job submitted for all articles - fastest method)
+  #      2 = Toolforge Jsub  (one job submitted per article - slower)
+  #      3 = Toolforge non-framework eg. using upload() instead of runbot.awk
   switch(BotName) {
 
     case "mybot":                                             # Custom bot paths  
       Home = "/home/adminuser/mybot/" BotName "/"  
       Agent = UserPage " (ask me about " BotName ")"
+      Engine = 0
       break
 
     default:                                                  # Default both paths
       Home = "/home/adminuser/BotWikiAwk/bots/" BotName "/"  
       Agent = UserPage " (ask me about " BotName ")"
+      Engine = 0
       break
   }  
 
@@ -87,6 +95,7 @@ BEGIN {
   
   # 5e. runbot.awk
   Exe["parallel"] = ... 
+  Exe["zotkill"] = "zotkill.pl"     # file locking utility for Toolforge concurrency
 
   # 5f. makebot.awk
   Exe["chmod"] = ...
@@ -613,8 +622,10 @@ function stopbutton(button,bb,  command,butt,i) {
     bell()
     sleep(4)
   }
-  # sleep(864000, "unix")          # sleep up to 24 days .. no other way to stop GNU parallel from running
-  sleep(600, "unix")               # sleep 10 minutes .. for running from cron
+  if(Engine == 0)
+    sleep(864000, "unix")          # sleep up to 24 days .. no other way to stop GNU parallel from running
+  else
+    sleep(600, "unix")             # sleep 10 minutes .. for running from cron
   return "STOP"
 }
 
@@ -693,4 +704,21 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
     removefile(article)
 }
 
+
+#
+# Write to file in parallel environment account for file locks                  
+#
+#  eng 1 or 2 is Toolforge. eng 0 is none or GNU parallel
+#         
+function parallelWrite(msg, file, eng,    command) {
+
+  if(eng == 1 || eng == 2) {
+    command = "echo " shquote(msg) " | " Exe["zotkill"] " " shquote(file)
+    sys2var(command)
+  }
+  else {
+    print msg >> file
+    close(file)
+  }
+}
 

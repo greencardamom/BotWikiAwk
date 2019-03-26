@@ -561,9 +561,9 @@ function sleep(seconds,opt,   t) {
 #
 function stdErr(s, flag) {
     if (flag == "n")
-        printf("%s",s) > "/dev/stderr"
+        printf("%s",s) >> "/dev/stderr"
     else
-        printf("%s\n",s) > "/dev/stderr"
+        printf("%s\n",s) >> "/dev/stderr"
     close("/dev/stderr")
 }
 
