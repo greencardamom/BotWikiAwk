@@ -37,9 +37,9 @@ BEGIN {
   BotName = _pwdA[_pwdC]
 
   # Engine settings
-  _delay = "0.5"      # GNU parallel: delay between each worker startup
-  _procs = "20"       # GNU parallel: max number of parallel workers at a time
-  _griddelay = "0.5"  # Toolforge grid: jsub delay between each worker startup
+  _delay = "0.5"        # GNU parallel: delay between each worker startup
+  _procs = "20"         # GNU parallel: max number of parallel workers at a time
+  _griddelay = "1"      # Toolforge grid: jsub delay between each worker startup
 
 }
 
@@ -174,7 +174,7 @@ function gridfireJsub(auth, drymode, pid,    i,a,command) {
 # gridwatch - monitor qstat until workers are finished
 #
 function gridwatchJsub(jobsize,  op) {
-  printf "Waiting on " jobsize " workers "
+  printf "\nWaiting on " jobsize " workers "
 
   while(1) {
     op = sys2var("qstat -j tools.botwikiawk-" BotName "-* 2>/dev/null" )
@@ -249,7 +249,7 @@ function gridfireArray(auth, drymode, pid,   driver,procname,logdir,jobsize,comm
     # standard settings found in /usr/bin/jsub plus the -t job-array, -j y, and -cwd .. need -once?
     # /usr/bin/qsub -t 1-5:1 -j y -o /data/project/botwikiawk/BotWikiAwk/bots/accdate/meta/accdate20180614.0001-0010/gridlog -M tools.botwikiawk@tools.wmflabs.org -N test3 -hard -l h_vmem=524288k -q task -b yes /mnt/nfs/labstore-secondary-tools-project/botwikiawk/BotWikiAwk/bots/accdate/test.awk
 
-    command = "/usr/bin/qsub -t 1-" jobsize ":1 -j y -o " logdir " -M tools.botwikiawk@tools.wmflabs.org -N " procname " -hard -l h_vmem=100000k -cwd -q task -b yes " driver " -d " shquote(drymode) " -p " shquote(pid) " -n _gridarray -a " shquote(auth)
+    command = "/usr/bin/qsub -t 1-" jobsize ":1 -j y -o " logdir " -M tools.botwikiawk@tools.wmflabs.org -N " procname " -hard -l h_vmem=100000k -cwd -q task -b yes " driver " -e " Engine " -d " shquote(drymode) " -p " shquote(pid) " -n _gridarray -a " shquote(auth)
 
     # Your job-array 432577.1-5:1 ("test3") has been submitted
     op = sys2var(command)
