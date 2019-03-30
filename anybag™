@@ -1,0 +1,68 @@
+<! - BANNER ACROSS НАЧАЛО НА СТРАНИЦАТА ->
+<div id = "mp-topbanner" style = "clear: и двете; позиция: относителна; оразмеряване на полето: граница-кутия; ширина: 100%; граница: 1.2em 0 6px; мин-ширина: 47em; граница: 1px solid #ddd; background-color: # f9f9f9; цвят: # 000; бяло пространство: nowrap; ">
+<! - "ДОБРЕ ДОШЛИ В WIKIPEDIA" И ЧЛЕНОВАТА СТАТИЯ ->
+<div style = "margin: 0.4em; ширина: 22em; text-align: center;">
+<div style = "font-size: 162%; padding: .1em;"> Добре дошли в [[Wikipedia]], </div>
+<div style = "font-size: 95%;"> [[безплатно съдържание | безплатно]] [[енциклопедия]], че [[Wikipedia: Въведение | всеки може да редактира]]. </div>
+<div id = "articlecount" style = "font-size: 85%;"> [[Special: Statistics | {{NUMBEROFARTICLES}}] статии в [[английски език | английски]] </div>
+</ DIV>
+<! - ПОРТАЛЕН СПИСЪК НА ДЯСНА ->
+<ul style = "position: absolut; right: -1em; top: 50%; margin-top: -2.4em; ширина: 38%; min-width: 25em; размер на шрифта: 95%;">
+<li style = "position: absolute; left: 0; top: 0;"> [[Portal: Изкуства | Изкуства]] </li>
+<li style = "position: absolute; left: 0; top: 1.6em;"> [[Портал: Биография | Биография]] </li>
+<li style = "position: absolute; left: 0; top: 3.2em;"> [[Портал: География | География]] </li>
+<li style = "position: absolute; left: 33%; top: 0;"> [[Portal: История | История]] </li>
+<li style = "position: absolute; left: 33%; отгоре: 1.6em;"> [[Portal: Математика | Математика]] </li>
+<li style = "position: absolute; left: 33%; отгоре: 3.2em;"> [[Portal: Science | Наука]] </li>
+<li style = "position: absolute; left: 66%; отгоре: 0;"> [[Portal: Общество | Общество]] </li>
+<li style = "position: absolute; left: 66%; отгоре: 1.6em;"> [[Portal: Technology | Technology]] </li>
+<li style = "position: absolute; left: 66%; отгоре: 3.2em;"> <strong> [[Portal: Съдържание / Портали | Всички портали]] </strong> </li>
+</ Ул>
+</ DIV>
+<! - ГЛАВНА СТРАНИЦА ->
+{{#if: {{Начална страница банер}} |
+<div id = "mp-banner" class = "MainPageBG" style = "margin-top: 4px; подложка: 0.5em; цвят на фона: # fffaf5; граница: 1px solid # f2e0ce;">
+{{Начална страница банер}}
+</ DIV>
+}}
+<! - СЕГАШНО СЪДЪРЖАНИЕ ->
+{| role = "presentation" id = "mp-upper" style = "ширина: 100%; margin-top: 4px; интервал между границите: 0px;"
+<! - ДЕЙСТВИЕ: ЗНАЕТЕ ЛИ ->
+| id = "mp-left" class = "MainPageBG" style = "ширина: 55%; граница: 1px солидна # cef2e0; подложка: 0; фон: # f5fffa; вертикално подравняване: отгоре; цвят: # 000;" |
+<h2 id = "mp-tfa-h2" стил = "марж: 0.5em; фон: # cef2e0; семейство на шрифта: наследи; размер на шрифта: 120%; тегло на шрифта: получер; цвят: # 000; подложка: 0.2em 0.4em; "> {{# ifexpr: {{formatnum: {{PAGESIZE: Уикипедия: Днешната статия / {{# time: F j, Y}}}} | R}} От 150-дневна статия | Известна статия <span style = "font-size: 85%; font-weight: normal;"> (Проверете по-късно за днешния.) </span>}} </h2>
+<div id = "mp-tfa" style = "padding: 0.1em 0.6em;"> {{# ifexpr: {{formatnum: {{PAGESIZE: Уикипедия: Днешната статия / {{# time: F j, Y} }}} | R}}> 150 | {{Wikipedia: Днешната статия / {{# time: F j, Y}}}} | {{Wikipedia: Днешната статия / {{# time: F j, Y | -1 ден}}}}}} </div>
+<h2 id = "mp-dyk-h2" style = "clear: и двете; margin: 0.5em; background: # cef2e0; font-family: inherit; размер на шрифта: 120%; тегло на шрифта: получер; граница: 1px цвят # a3bfb1; цвят: # 000; подложка: 0.2em 0.4em; "> Знаете ли, че ... </h2>
+<div id = "mp-dyk" style = "padding: 0.1em 0.6em 0.5em;"> {{Знаете ли, че}} </div>
+| style = "граница: 1px солидна прозрачна;" |
+<! - В НОВИНИ И НА ТОЗИ ДЕН ->
+| id = "mp-right" class = "MainPageBG" style = "ширина: 45%; граница: 1px плътна # cedff2; подложка: 0; фон: # f5faff; вертикално подравняване: отгоре;" |
+<h2 id = "mp-itn-h2" стил = "марж: 0.5em; фон: # cedff2; семейство на шрифта: наследи; размер на шрифта: 120%; тегло на шрифта: получер; граница: 1px твърдо # a3b0bf; цвят: # 000; подложка: 0.2em 0.4em; "> В новините </h2>
+<div id = "mp-itn" style = "padding: 0.1em 0.6em;"> {{В новините}} </div>
+<h2 id = "mp-otd-h2" style = "clear: и двете; margin: 0.5em; background: # cedff2; семейство на шрифта: наследи; размер на шрифта: 120%; тегло на шрифта: получер; граница: 1px цвят # a3b0bf; цвят: # 000; подложка: 0.2em 0.4em; "> На този ден </h2>
+<div id = "mp-otd" style = "padding: 0.1em 0.6em 0.5em;"> {{Wikipedia: Избрани годишнини / {{# time: F j}}}} </div>
+|}
+<! - СЕГАШЕН СПИСЪК -> <! - УСЛОВНО ШОУ -> {{# switch: {{CURRENTDAYNAME}} | понеделник | петък =
+<div id = "mp-middle" class = "MainPageBG" style = "margin-top: 4px; граница: 1px твърдо # f2cedd; фон: # fff5fa; overflow: auto;">
+<div id = "mp-center">
+<h2 id = "mp-tfl-h2" стил = "марж: 0.5em; фон: # f2cedd; семейство на шрифта: наследи; размер на шрифта: 120%; тегло на шрифта: получер; граница: 1px solid # bfa3af; цвят: # 000; подложка: 0.2em 0.4em "> От днешния списък </h2>
+<div id = "mp-tfl" style = "padding: 0.3em 0.7em;"> {{# ifexist: Уикипедия: Дневен списък / {{# time: F j, Y}} | {{Wikipedia: list / {{# time: F j, Y}}}} | {{TFLempty}}}} </div>
+</ DIV>
+</div> |}} <! - END CONDITIONAL SHOW ->
+<! - СЪЗДАВАНАТА СЕГА КАРТИНА ->
+<div id = "mp-lower" class = "MainPageBG" style = "margin-top: 4px; граница: 1px плътна # ddcef2; фон: # faf5ff; overflow: auto;">
+<div id = "mp-bottom">
+<h2 id = "mp-tfp-h2" стил = "марж: 0.5em; фон: # ddcef2; семейство на шрифта: наследи; размер на шрифта: 120%; тегло на шрифта: получер; цвят: # 000; подложка: 0.2em 0.4em "> {{# ifexist: Шаблон: POTD protected / {{# time: Ymd}} | Представена снимка & ensp; <span style = "размер на шрифта: 85%; шрифт-тегло: нормално;"> (Проверете по-късно за днешния.) </span>}} </h2>
+<div id = "mp-tfp" style = "margin: 0.1em 0.4em 0.6em;"> {{# ifexist: Шаблон: POTD protected / {{# time: Ymd}} | {{POTD protected / {{# време: Ymd}}}} | {{POTD protected / {{# time: Ymd | -1 ден}}}}}} </div>
+</ DIV>
+</ DIV>
+<! - СЕКЦИИ НА ДНЕВНАТА СТРАНИЦА ->
+<div id = "mp-other-lower" стил = "padding-top: 4px; подложка-дъно: 2px; граница: 1px твърдо # e2e2e2; препълване: автоматично; margin-top: 4px;">
+<h2 id = "mp-other" style = "margin: 0.5em; фон: #eeeeee; граница: 1px твърдо #ddd; цвят: # 222; подложка: 0.2em 0.4em; размер на шрифта: 120%; тегло: получер; семейство на шрифт: наследи; "> Други области на Уикипедия </h2>
+<div id = "mp-other-content" style = "padding: 0.1em 0.6em;"> {{Други области на Уикипедия}} </div>
+<h2 id = "mp-sister" style = "margin: 0.5em; фон: #eeeeee; граница: 1px твърдо #ddd; цвят: # 222; подложка: 0.2em 0.4em; размер на шрифта: 120%; weight: bold; font-family: inherit; "> Сестринските проекти на Уикипедия </h2>
+<div id = "mp-sister-content" style = "padding: 0.1em 0.6em;"> {{Проектите на сестрата на Wikipedia}} </div>
+<h2 id = "mp-lang" style = "margin: 0.5em; фон: #efefef; граница: 1px твърдо #ddd; цвят: # 222; подложка: 0.2em 0.4em; размер на шрифта: 120%; тегло: удебелен, шрифт семейство: наследи; "> Уикипедия езици </h2>
+<div style = "padding: 0.1em 0.6em;"> {{Wikipedia languages}} </div>
+</ DIV>
+<! - INTERWIKI STRAPLINE ->
+<noinclude> {{Начална страница interwikis}} {{noexternallanglinks}} {{# ако: {{Wikipedia: Main_Page / Утре}} ||}} </noinclude> __NOTOC____NOEDITSECTION__
