@@ -138,7 +138,7 @@ BEGIN {
     if(length(summary) < 5)
       summary = "Edit by " BotName
 
-    command = "timeout 20s " Exe["wikiget"] " -E " shquote(namewiki) " -S " shquote(summary) " -P " shquote(article) " -l en"
+    command = Exe["timeout"] " 20s " Exe["wikiget"] " -E " shquote(namewiki) " -S " shquote(summary) " -P " shquote(article) " -l en"
     result = sys2var(command)
 
     if(result ~ /[Ss]uccess/) {

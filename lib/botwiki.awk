@@ -127,8 +127,10 @@ BEGIN {
       stdErr("No known bot '" BotName "'. Run botwikiawk commands while in the home directory of the bot.")
       exit
     } 
-    delete Config
-    readprojectcfg()
+    if(Engine != 3) {
+      delete Config
+      readprojectcfg()
+    }
   }
  
 }
@@ -272,7 +274,7 @@ function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
 function getwikisource(namewiki, redir,    f,ex,k,a,b,command,urlencoded,r,redirurl) {
 
   if(redir !~ /follow|dontfollow/)
-    redir = dontfollow
+    redir = "dontfollow"
 
   urlencoded = urlencodeawk(strip(namewiki))
 
@@ -591,7 +593,7 @@ function stopbutton(button,bb,  command,butt,i) {
   if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
     StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
 
-  command = "timeout 20s wget -q -O- " shquote(StopButton "&action=raw")
+  command = "timeout --forground 20s wget -q -O- " shquote(StopButton "&action=raw")
   button = sys2var(command)
 
   if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
@@ -649,7 +651,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
 
     # {{bots|deny=<botlist>}}
     if(match(wikisource, /[{][{][ ]*[Bb]ots[ \t]*[\n]?[ \t]*[|][^}]*[}]/, dest)) {
-      re = regesc3(botname) "bot"
+      re = regesc3(botname) "(bot)?"
       if(dest[0] ~ re) {
         print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Error: Bot deny" >> logdir "error"
         return
@@ -674,7 +676,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
       tries = 3
       for(i = 1; i <= tries; i++) {
 
-        command = "timeout 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l " lang
+        command = "timeout --foreground 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l " lang
         if(debug == 2) stdErr(command)
         result = sys2var(command)
 

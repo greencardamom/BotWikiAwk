@@ -1,5 +1,6 @@
 # Changes in reverse chronological order
 #
+# 0.50 Jun 18      - add "if(Engine != 3)" to botwiki.awk removing need for project-specific customizations in this location
 # 0.49 Mar 26      - add zotkill.pl for file locking ability on Toolforge
 #                     improve concurrency functions for Toolforge - JobArray engine now preferred 
 #                     add parallelWrite() 
