@@ -714,7 +714,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
 #         
 function parallelWrite(msg, file, eng,    command) {
 
-  if(eng == 1 || eng == 2) {
+  if(eng == 1 || eng == 2 || eng = 3) {
     command = "echo " shquote(msg) " | " Exe["zotkill"] " " shquote(file)
     sys2var(command)
   }
