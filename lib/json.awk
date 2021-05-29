@@ -14,11 +14,10 @@
 #
 #  Sample usage
 #
-# 1. Create a JSON file eg. 
+# 1. Create a sample JSON file eg. 
 #    wget -q -O- "https://en.wikipedia.org/w/api.php?action=query&titles=Public opinion on global warming|Pertussis&prop=info&format=json&utf8=&redirects" > o
 # 2. In a test, view what the json-array looks like with dump() eg.
-#      query_json(readfile("o"), jsona)
-#      awkenough_dump(jsona, "jsona")
+#      awk -i json.awk -i readfile 'BEGIN{query_json(readfile("o"), jsona); awkenough_dump(jsona, "jsona")}'
 # 3. Use the json-array in a program 
 #      if( query_json(readfile("o"), jsona) >= 0)
 #        id = jsona["query","pages","25428398","pageid"]

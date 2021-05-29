@@ -681,7 +681,7 @@ function join(arr, start, end, sep,    result, i) {
 #       https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 #   . spliti() does reverse 
 #
-function join2(arr, sep, sortkey,         i,lobster) {
+function join2(arr, sep, sortkey,         i,lobster,result) {
 
     if (!empty(sortkey)) {
         if ("sorted_in" in PROCINFO) 
@@ -803,8 +803,10 @@ function clean(str,  safe) {
 
 #
 # convertxml() - convert XML to plain
+#  . option - convertxml(s,"all") will also do additional characters 
 #
-function convertxml(str,   safe) {
+function convertxml(str,flag,   safe) {
+
     safe = str
     gsub(/&lt;/,"<",safe)
     gsub(/&gt;/,">",safe)
@@ -812,6 +814,92 @@ function convertxml(str,   safe) {
     gsub(/&amp;/,"\\&",safe)
     gsub(/&#039;/,"'",safe)
     gsub(/&#10;/,"'",safe)
+    gsub(/&middot;/,"·",safe)
+    gsub(/&raquo;/,"»",safe)
+    gsub(/&laquo;/,"«",safe)
+    gsub(/&rsquo;/,"’",safe)
+    gsub(/&lsquo;/,"‘",safe)
+    gsub(/&prime;/,"′",safe)
+    gsub(/&hellip;/,"…",safe)
+    gsub(/&frasl;/,"⁄",safe)
+    gsub(/&mdash;/,"—",safe)
+
+    # https://www.starr.net/is/type/htmlcodes.html
+    #  create two files one with each column o1 = left and o2 = right
+    #  paste o1 o2 | awk '{split($0,a,/[\t ]*/);print "      gsub(/" a[2] "/,\"" a[1] "\",safe)"}'
+  
+    if(flag == "all") {
+
+      ic = IGNORECASE
+      IGNORECASE = 0
+
+      gsub(/&Aacute;/,"Á",safe)
+      gsub(/&aacute;/,"á",safe)
+      gsub(/&Agrave;/,"À",safe)
+      gsub(/&Acirc;/,"Â",safe)
+      gsub(/&agrave;/,"à",safe)
+      gsub(/&Acirc;/,"Â",safe)
+      gsub(/&acirc;/,"â",safe)
+      gsub(/&Auml;/,"Ä",safe)
+      gsub(/&auml;/,"ä",safe)
+      gsub(/&Atilde;/,"Ã",safe)
+      gsub(/&atilde;/,"ã",safe)
+      gsub(/&Aring;/,"Å",safe)
+      gsub(/&aring;/,"å",safe)
+      gsub(/&Aelig;/,"Æ",safe)
+      gsub(/&aelig;/,"æ",safe)
+      gsub(/&Ccedil;/,"Ç",safe)
+      gsub(/&ccedil;/,"ç",safe)
+      gsub(/&Eth;/,"Ð",safe)
+      gsub(/&eth;/,"ð",safe)
+      gsub(/&Eacute;/,"É",safe)
+      gsub(/&eacute;/,"é",safe)
+      gsub(/&Egrave;/,"È",safe)
+      gsub(/&egrave;/,"è",safe)
+      gsub(/&Ecirc;/,"Ê",safe)
+      gsub(/&ecirc;/,"ê",safe)
+      gsub(/&Euml;/,"Ë",safe)
+      gsub(/&euml;/,"ë",safe)
+      gsub(/&Iacute;/,"Í",safe)
+      gsub(/&iacute;/,"í",safe)
+      gsub(/&Igrave;/,"Ì",safe)
+      gsub(/&igrave;/,"ì",safe)
+      gsub(/&Icirc;/,"Î",safe)
+      gsub(/&icirc;/,"î",safe)
+      gsub(/&Iuml;/,"Ï",safe)
+      gsub(/&iuml;/,"ï",safe)
+      gsub(/&Ntilde;/,"Ñ",safe)
+      gsub(/&ntilde;/,"ñ",safe)
+      gsub(/&Oacute;/,"Ó",safe)
+      gsub(/&oacute;/,"ó",safe)
+      gsub(/&Ograve;/,"Ò",safe)
+      gsub(/&ograve;/,"ò",safe)
+      gsub(/&Ocirc;/,"Ô",safe)
+      gsub(/&ocirc;/,"ô",safe)
+      gsub(/&Ouml;/,"Ö",safe)
+      gsub(/&ouml;/,"ö",safe)
+      gsub(/&Otilde;/,"Õ",safe)
+      gsub(/&otilde;/,"õ",safe)
+      gsub(/&Oslash;/,"Ø",safe)
+      gsub(/&oslash;/,"ø",safe)
+      gsub(/&szlig;/,"ß",safe)
+      gsub(/&Thorn;/,"Þ",safe)
+      gsub(/&thorn;/,"þ",safe)
+      gsub(/&Uacute;/,"Ú",safe)
+      gsub(/&uacute;/,"ú",safe)
+      gsub(/&Ugrave;/,"Ù",safe)
+      gsub(/&ugrave;/,"ù",safe)
+      gsub(/&Ucirc;/,"Û",safe)
+      gsub(/&ucirc;/,"û",safe)
+      gsub(/&Uuml;/,"Ü",safe)
+      gsub(/&uuml;/,"ü",safe)
+      gsub(/&Yacute;/,"Ý",safe)
+      gsub(/&yacute;/,"ý",safe)
+      gsub(/&yuml;/,"ÿ",safe)
+
+      IGNORECASE = ic
+    }
+
     return safe
 }
 
@@ -856,6 +944,18 @@ function regesc2(str,   safe) {
     gsub(/&/,"\\\\\\&",safe)
     return safe
 }
+
+#
+# reverse() - reverse a string
+#                  
+function reverse(s,  a,i,n) {             
+
+    c = split(s, a, "")
+    for(i = c; i >= 1; i--)
+        n = n a[i]
+    return n
+
+}         
 
 #
 # splitx() - split str along re and return num'th element
@@ -1180,6 +1280,35 @@ function sortstring(s,order,  a,j,b) {
 
     return strip(b)
 }
+
+# 
+# comparestr() - compare two strings letter by letter. return 1 if strings are the same
+# 
+#   . normally done with "==" or "~" but this is useful in some cases such as
+#       when strings contain a ' and/or a " and via command-line           
+# 
+function comparestr(s1,s2,   a1,a2,c1,c2,i) {
+
+    c1 = split(s1, a1, "")
+    c2 = split(s2, a2, "")
+    if(c1 != c2) return 0
+
+    for(i = 1; i <= c1; i++)
+        if(a1[i] != a2[i]) return 0
+
+  return 1         
+
+}
+
+
+#
+# Convert \n to "_newline_" - useful for logging purposes
+#
+function hidenewline(s) {                  
+    gsub(/\n/, "_newline_", s)
+    return s             
+}
+
 
 # [[ __________________________________________________________________________________ ]]
 # [[ ____________________ Wikipedia markup ____________________________________________ ]]
@@ -1531,25 +1660,55 @@ function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path) {
 
 #
 # urldecodeawk - decode a urlencoded string
-#
+# 
 #  Requirement: gawk -b
-#  Credit: Rosetta Stone January 2017
-#
-function urldecodeawk(str,  safe,len,L,M,R,i) {
+#  Credit: Rosetta Stone January 2017.
+#          "literal" added by GreenC 2020
+#              
+function urldecodeawk(str,  safe,len,L,M,R,i,literal,debug) {
+
+    debug = 0
 
     safe = str
-
     len = length(safe)
     for (i = 1; i <= len; i++) {
+        literal = 0
         if ( substr(safe,i,1) == "%") {
-            L = substr(safe,1,i-1) # chars to left of "%"
-            M = substr(safe,i+1,2) # 2 chars to right of "%"
-            R = substr(safe,i+3)   # chars to right of "%xx"
-            safe = sprintf("%s%c%s",L,hex2dec(M),R)
+
+            if(empty(substr(safe,i+1,1)) || empty(substr(safe,i+2,1))) {
+                                           # Bug in data, need at least two chars after a %, otherwise return as literal %
+              literal = 1                  # awk -ilibrary 'BEGIN{print urldecodeawk("test%2")}' => "test%2"
+            }
+
+            L = substr(safe,1,i-1)         # chars to left of "%"
+
+            if(debug) print "L = " L
+
+            if(!literal)
+              M = substr(safe,i+1,2)       # 2 chars to right of "%"
+            else
+              M = ""
+
+            if(debug) print "M = " M
+
+            if(!literal)
+              R = substr(safe,i+3)         # chars to right of "%xx"
+            else {
+              if(len - 1 == i)
+                R = substr(safe, i + 1, 1)
+              else
+                R = ""
+            }
+
+            if(debug) print "R = " R
+
+            if(!literal)
+              safe = sprintf("%s%c%s",L,hex2dec(M),R)
+            else
+              safe = sprintf("%s", L) "%" sprintf("%s", R)
         }
     }
     return safe
-
 }
 function hex2dec(s,  num) {
     num = index("0123456789ABCDEF",toupper(substr(s,length(s)))) - 1

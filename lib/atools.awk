@@ -52,7 +52,7 @@ BEGIN {
   portore = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww]?[WwEe]?[WwBb]?[.]?[Aa][Rr][Qq][Uu][Ii][Vv][Oo][.][Pp][Tt][:]?[8]?[04]?[48]?[30]?"
 
   # Stanford
-  stanfordre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ss][Ww][Aa][Pp][.][Ss][Tt][Aa][Nn][Ff][Oo][Rr][Dd][.][Ee][Dd][Uu][:]?[8]?[04]?[48]?[30]?"
+  stanfordre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]([Ss][Ww][Aa][Pp]|[Ss][Uu][Ll][-][Ss][Ww][Aa][Pp][-][Pp][Rr][Oo][Dd])[.][Ss][Tt][Aa][Nn][Ff][Oo][Rr][Dd][.][Ee][Dd][Uu][:]?[8]?[04]?[48]?[30]?"
 
   # Archive-It.org
   archiveitre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]" iahre "[.]?[Aa][Rr][Cc][Hh][Ii][Vv][Ee][-][Ii][Tt][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
@@ -66,16 +66,16 @@ BEGIN {
   # Icelandic Archives
   vefsafnre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Aa][Yy][Bb][Aa][Cc][Kk][.][Vv][Ee][Ff][Ss][Aa][Ff][Nn][.][Ii][Ss][:]?[8]?[04]?[48]?[30]?"
 
-  # Europa Archives (Ireland)
+  # Europa Archives (Ireland) - DEFUNCT
   europare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Cc][Oo][Ll][Ll][Ee][Cc][Tt][Ii][Oo][Nn][Ss]?[.][Ee][Uu][Rr][Oo][Pp][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
-  # Internet Memory Foundation (Netherlands)
+  # Internet Memory Foundation (Netherlands) - DEFUNCT
   memoryre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Cc][Oo][Ll][Ll][Ee][Cc][Tt][Ii][Oo][Nn][Ss][.][Ii][Nn][Tt][Ee][Rr][Nn][Ee][Tt][Mm][Ee][Mm][Oo][Rr][Yy][.][Oo][Rr][Gg][:]?[8]?[04]?[48]?[30]?"
 
   # Perma.CC Archives
   permaccre =  "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Pp][Ee][Rr][Mm][Aa][-][Aa][Rr][Cc][Hh][Ii][Vv][Ee][Ss][.][Cc][Cc][:]?[8]?[04]?[48]?[30]?"
 
-  # Proni Web Archives
+  # Proni Web Archives - DEFUNCT
   pronire = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Ee][Bb][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Pp][Rr][Oo][Nn][Ii][.][Gg][Oo][Vv][.][Uu][Kk][:]?[8]?[04]?[48]?[30]?"
 
   # UK Parliament
@@ -87,7 +87,7 @@ BEGIN {
   # Athens University 
   greecere = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Aa][Rr][Cc][Hh][Ii][Vv][Ee][.][Aa][Uu][Ee][Bb][.][Gg][Rr][:]?[8]?[04]?[48]?[30]?"
 
-  # Canada
+  # Canada - DEFUNCT
   # http://www.collectionscanada.gc.ca/webarchives/20071125010224/http
   canadare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Ww][Ww][.][Cc][Oo][Ll][Ll][Ee][Cc][Tt][Ii][Oo][Nn][Ss][Cc][Aa][Nn][Aa][Dd][Aa][.][Gg][Cc][.][Cc][Aa][:]?[8]?[04]?[48]?[30]?[/]([Aa][Rr][Cc][Hh][Ii][Vv][Ee][Ss][Ww][Ee][Bb]|[Ww][Ee][Bb][Aa][Rr][Cc][Hh][Ii][Vv][Ee][Ss])[/]"
 
@@ -98,10 +98,6 @@ BEGIN {
   # Estonian Web Archive
   # http://veebiarhiiv.digar.ee/a/20130606072101/http://www.tamula.edu.ee/index.php/et/
   estoniare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Vv][Ee][Ee][Bb][Ii][Aa][Rr][Hh][Ii][Ii][Vv][.][Dd][Ii][Gg][Aa][Rr][.][Ee][Ee][:]?[8]?[04]?[48]?[30]?"
-
-  # National Archives USA (NARA)
-  # https://www.webharvest.gov/congress112th/20121211213014/http://www.akaka.senate.gov/
-  narare = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Ww][Ww][.][Ww][Ee][Bb][Hh][Aa][Rr][Vv][Ee][Ss][Tt][.][Gg][Oo][Vv][:]?[8]?[04]?[48]?[30]?"
 
   # Singapore Archives
   # http://eresources.nlb.gov.sg/webarchives/wayback/20061229020131/http://www.nparks.gov.sg/
@@ -117,7 +113,7 @@ BEGIN {
 
   # National Archives US 
   # http://webharvest.gov/peth04/20041022004143/http://www.ftc.gov/os/statutes/textile/alerts/dryclean 
-  webharvestre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/][Ww][Ee][Bb][Hh][Aa][Rr][Vv][Ee][Ss][Tt][.][Gg][Oo][Vv][:]?[4]?[48]?[30]?"
+  webharvestre = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/]([Ww]{3}[.])?[Ww][Ee][Bb][Hh][Aa][Rr][Vv][Ee][Ss][Tt][.][Gg][Oo][Vv][:]?[4]?[48]?[30]?"
 
   # National Archives Australia
   #  http://pandora.nla.gov.au/pan/14231/20120727-0512/www.howlspace.com.au/en2/inxs/inxs.htm
@@ -126,7 +122,7 @@ BEGIN {
   #  http://pandora.nla.gov.au/nph-arch/2000/S2000-Dec-5/http://www.paralympic.org.au/athletes/athleteprofile60da.html
   #  http://webarchive.nla.gov.au/gov/20120326012340/http://news.defence.gov.au/2011/09/09/army-airborne-insertion-capability/
   #  http://content.webarchive.nla.gov.au/gov/wayback/20120326012340/http://news.defence.gov.au/2011/09/09/army-airborne-insertion-capability
-  nlaaure = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/](pandora|webarchive|content[.]webarchive)[.]nla.gov.au[:]?[8]?[04]?[48]?[30]?[/](pan|nph[-]wb|nph[-]arch|gov|gov[/]wayback)[/]([0-9]{4,7}[/][0-9]{8}[-][0-9]{4}|[0-9]{14}|[0-9]{4}[/][A-Z][0-9]{4}[-][A-Z][a-z]{2}[-][0-9]{1,2})[/]"
+  nlaaure = "[Hh][Tt][Tt][Pp][Ss]?[:][/][/](pandora|webarchive|content[.]webarchive)[.]nla.gov.au[:]?[8]?[04]?[48]?[30]?[/](awa|pan|nph[-]wb|nph[-]arch|gov|gov[/]wayback)[/]([0-9]{4,7}[/][0-9]{8}[-][0-9]{4}|[0-9]{14}|[0-9]{4}[/][A-Z][0-9]{4}[-][A-Z][a-z]{2}[-][0-9]{1,2})[/]"
 
   # WikiWix
   # http://archive.wikiwix.com/cache/20180329074145/http://www.linterweb.fr
@@ -145,7 +141,7 @@ BEGIN {
   # see https://phabricator.wikimedia.org/T178106 for a list of templates
   # copy list to file "cites-list" and run this awk command to generate the citesre regex statement then copy-paste it here
   # awk -ilibrary 'BEGIN{printf "[{][{][ ]*(";for(i=1;i<=splitn("cites-list",a,i);i++){gsub(/^\"{{|}}\",?$/,"",a[i]);printf a[i] "|" }; print ")[^}]+}}[ ]*"}'
-  citesre = "[{][{][ ]*(A Short Biographical Dictionary of English Literature|AZBilliards|BDMag|Bokref|Catholic[-]hierarchy|Cita audio|Cita conferencia|Cita conferenza|Cita DANFS|Cita enciclopedia|Cita Enciclopedia Católica|Cita entrevista|Cita episodio|Cita grupo de noticias|Cita historieta|Cita immagine|Cita juicio|Cita libro|Cita lista de correo|Cita mapa|Cita news|Cita notas audiovisual|Cita noticia|Cita pubblicazione|Cita publicación|Citar web|Cita tesis|Cita testo|Citation|Citation step free tube map|Citation Style documentation|Cita TV|Cita vídeo|Cita visual|Cita web|Cite act|Cite Australasia|Cite AV media|Cite AV media notes|Cite book|Cite comic|Cite comics image|Cite comics image lrg|Cite conference|Cite constitution|Cite DVD notes|Cite encyclopedia|Cite episode|Citeer boek|Citeer encyclopedie|Citeer journal|Citeer nieuws|Citeer tijdschrift|Citeer web|Cite Hansard|Cite IETF|Cite interview|Cite IrishBio|Cite journal|Cite letter|Cite magazine|Cite mailing list|Cite map|Cite Memoria Chilena|Cite music release notes|Cite news|Cite newsgroup|Cite PH act|Cite podcast|Cite postcode project|Cite press release|Cite QPN|Cite quick|Cite report|Cite SBDEL|Cite serial|Cite sign|Cite speech|Cite sports[-]reference|Cite techreport|Cite thesis|Cite Transperth timetable|Cite Trove newspaper|Cite tweet|Cite video|Cite vob|Cite web|Cite wikisource|College athlete recruit end|Cytuj stronę|DNZB|Documentación cita|Etude|Gazette WA|Goalzz|Harvard reference|Harvrefcol|Internetquelle|IPMag|IPSite|ITIS|IUCN|Kilde artikkel|Kilde avhandling|Kilde avis|Kilde AV[-]medium|Kilde bok|Kilde konferanse|Kilde oppslagsverk|Kilde pressemelding|Kilde www|KLISF|Lien conférence|Lien vidéo|Lien web|Macdonald Dictionary|MTRsource|Obra citada|Online source|PBMag|Press|Pressmeddelanderef|SA Rugby Article|Silvics|Singapore legislation|Source archived|Tidningsref|Tidskriftsref|Vancite book|Vancite journal|Vancite news|Vancite web|Vcite book|Vcite journal|Vcite news|Vcite web|Verkkoviite|Webbref|WebbrefSV|Web kaynağı|Web reference|WsPSM|Статья)[^}]+}}[ ]*"
+  citesre = "[{][{][ ]*(A Short Biographical Dictionary of English Literature|AZBilliards|BDMag|Bokref|Catholic[-]hierarchy|Cita audio|Cita conferencia|Cita conferenza|Cita DANFS|Cita enciclopedia|Cita Enciclopedia Católica|Cita entrevista|Cita episodio|Cita grupo de noticias|Cita historieta|Cita immagine|Cita juicio|Cita libro|Cita lista de correo|Cita mapa|Cita news|Cita notas audiovisual|Cita noticia|Cita pubblicazione|Cita publicación|Citar web|Cita tesis|Cita testo|Citation|Citation step free tube map|Citation Style documentation|Cita TV|Cita vídeo|Cita visual|Cita web|Cite act|Cite Australasia|Cite AV media|Cite AV media notes|Cite book|Cite comic|Cite comics image|Cite comics image lrg|Cite conference|Cite constitution|Cite DVD notes|Cite encyclopedia|Cite episode|Citeer boek|Citeer encyclopedie|Citeer journal|Citeer nieuws|Citeer tijdschrift|Citeer web|Cite Hansard|Cite IETF|Cite interview|Cite IrishBio|Cite[ ]*journal|Cite[ ]*letter|Cite[ ]*magazine|Cite mailing list|Cite[ ]*map|Cite Memoria Chilena|Cite music release notes|Cite news|Cite newsgroup|Cite PH act|Cite podcast|Cite postcode project|Cite press release|Cite QPN|Cite quick|Cite report|Cite SBDEL|Cite serial|Cite sign|Cite speech|Cite sports[-]reference|Cite techreport|Cite thesis|Cite Transperth timetable|Cite Trove newspaper|Cite tweet|Cite video|Cite vob|Cite web|Cite wikisource|Cite[ ]*document|Cite[ ]*abstract|Cite[ ]*paper|College athlete recruit end|Cytuj stronę|DNZB|Documentación cita|Etude|Gazette WA|Goalzz|Harvard reference|Harvrefcol|Internetquelle|IPMag|IPSite|ITIS|IUCN|Kilde artikkel|Kilde avhandling|Kilde avis|Kilde AV[-]medium|Kilde bok|Kilde konferanse|Kilde oppslagsverk|Kilde pressemelding|Kilde www|KLISF|Lien conférence|Lien vidéo|Lien web|Macdonald Dictionary|MTRsource|Obra citada|Online source|PBMag|Press|Pressmeddelanderef|SA Rugby Article|Silvics|Singapore legislation|Source archived|Tidningsref|Tidskriftsref|Vancite book|Vancite journal|Vancite news|Vancite web|Vcite book|Vcite journal|Vcite news|Vcite web|Verkkoviite|Webbref|WebbrefSV|Web kaynağı|Web reference|WsPSM|Статья)[^}]+}}[ ]*"
   # use of citesre requires IGNORECASE=1 to be set
 
 }
@@ -396,7 +392,7 @@ function islocgov(url) { return isarchive_helper(url, locgovre) }
 #
 # Return true if URL is for http://arquivo.pt/wayback/20091010102944/http..
 #
-function isporto(url) { return isarchive_helper(url, portore  "[/]?[Ww]?[Aa]?[Yy]?[Bb]?[Aa]?[Cc]?[Kk]?[/]?[Ww]?[Aa]?[Yy]?[Bb]?[WwAa]?[EeCcLl]?[BbKkLl]?[/][0-9*]{8,14}[/]") }
+function isporto(url) { return isarchive_helper(url, portore  "[/]?[Ww]?[Aa]?[Yy]?[Bb]?[Aa]?[Cc]?[Kk]?[/]?[Ww]?[Aa]?[Yy]?[Bb]?[WwAa]?[EeCcLl]?[BbKkLl]?[/][0-9*]{8,14}(mp_)?[/]") }
 #
 # Return true if URL is for https://swap.stanford.edu/20091122200123/http
 #
@@ -492,8 +488,9 @@ function islac(url) { return isarchive_helper(url, lacre) }
 function isarchive(url, group) {
 
   if(group == "all") {
-    if(isarchiveorg(url) || isarchive(url, "sub1"))
+    if(isarchiveorg(url) || isarchive(url, "sub1")) {
       return 1
+    }
   }
 
   if(group == "sub1") {  # everything but archive.org
