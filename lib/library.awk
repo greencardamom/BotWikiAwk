@@ -1675,10 +1675,13 @@ function urldecodeawk(str,  safe,len,L,M,R,i,literal,debug) {
         literal = 0
         if ( substr(safe,i,1) == "%") {
 
-            if(empty(substr(safe,i+1,1)) || empty(substr(safe,i+2,1))) {
-                                           # Bug in data, need at least two chars after a %, otherwise return as literal %
-              literal = 1                  # awk -ilibrary 'BEGIN{print urldecodeawk("test%2")}' => "test%2"
-            }
+                                           # Bug in data, need at least two valid chars after a %, otherwise return as literal % 
+                                           # awk -ilibrary 'BEGIN{print urldecodeawk("test%2")}' => "test%2"
+                                           # awk -ilibrary 'BEGIN{print urldecodeawk("test%#i")}' => "test%#i"
+            if(empty(substr(safe,i+1,1)) || empty(substr(safe,i+2,1)))   
+              literal = 1
+            if(substr(safe,i+1,1) !~ /[0-9a-zA-Z]/ || substr(safe,i+2,1) !~ /[0-9a-zA-Z]/)
+              literal = 1
 
             L = substr(safe,1,i-1)         # chars to left of "%"
 
