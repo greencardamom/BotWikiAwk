@@ -91,8 +91,7 @@ fi
 
 # Download wikiget, load manifest, set shebangs, create exe paths, create symlinks
 
-"${awkpath}" -ilibrary -v awkpath="$awkpath" 'BEGIN {
-
+"${awkpath}" -lfilefuncs -v awkpath="$awkpath" 'BEGIN {
 
   c = split(ENVIRON["AWKPATH"], a, ":")
   for(i = 1; i <= c; i++) {
@@ -120,7 +119,7 @@ fi
     stdErr("setup.sh: Unable to find wget and cannot download wikiget.awk from GitHub. Install wikiget manually in ~/bin")
   }
   else {
-    p = sys2var("wget -q -O- " shquote("https://raw.githubusercontent.com/greencardamom/Wikiget/master/wikiget.awk"))
+    p = sys2var("wget -q -O- \"https://raw.githubusercontent.com/greencardamom/Wikiget/master/wikiget.awk\"")
     if(!empty(p)) {
       print p > "bin/wikiget.awk"
       close("bin/wikiget.awk")
@@ -203,6 +202,95 @@ fi
       }      
     }
   }
-}'
+}
+#
+# functions from library.awk 
+#
+function chDir(dir, ret) {
+    ret = chdir(dir)
+    if (ret < 0) {
+        return 0
+    }            
+    else return 1
+}
+function stdErr(s, flag) {
+    if (flag == "n")
+        printf("%s",s) > "/dev/stderr"
+    else
+        printf("%s\n",s) > "/dev/stderr"
+    close("/dev/stderr")
+}
+function sys2var(command        ,fish, scale, ship) {
+    while ( (command | getline fish) > 0 ) {
+        if ( ++scale == 1 ) ship = fish 
+        else ship = ship "\n" fish
+    }
+    close(command)
+    system("")
+    return ship
+} 
+function empty(s) {
+    if (length(s) == 0) return 1
+    return 0
+}
+function readfile(file,     tmp, save_rs) {
+    save_rs = RS       
+    RS = "^$"   
+    getline tmp < file
+    close(file)
+    RS = save_rs
+    return tmp
+}
+function splitn(fp, arrSP, counter, start,    c,j,dSP,i,save_sorted) {
+
+    if ( empty(start) )
+        start = 1     
+    if (counter > start)
+        return length(arrSP)
+    PROCINFO["sorted_in"] = "@ind_num_asc"
+    if (fp !~ /\n/) {
+        if (checkexists(fp))      # If the string doesnt contain a \n check if a filename exists
+            fp = readfile(fp)     # with that name. If not assume its a literal string. This is a bug
+    }                             # in case a filename exists with the same name as the literal string.
+    delete arrSP
+    c = split(fp, dSP, "\n")
+    for (j in dSP) {
+        if (empty(dSP[j]))
+            delete dSP[j]
+    }          
+    i = 1
+    for (j in dSP)  {
+        arrSP[i] = dSP[j]
+        i++
+    }
+    return length(dSP)
+}
+function checkexists(file, program, action) {
+    if ( ! exists(file) ) {
+        if ( action == "exit" ) {
+            stdErr(program ": Unable to find/open " file)
+            print program ": Unable to find/open " file
+            system("")
+            exit    
+        }
+        else return 0              
+    }
+    else return 1
+}
+function exists(name    ,fd) {
+    if ( stat(name, fd) == -1) return 0
+    else return 1
+}
+function splitx(str, re, num,    a){
+    if(split(str, a, re)) return a[num]
+    else return ""
+}
+function strip(str) {
+    if (match(str, /[^ \t\n].*[^ \t\n]/)) return substr(str, RSTART, RLENGTH)
+    else if (match(str, /[^ \t\n]/)) return substr(str, RSTART, 1)
+    else return ""
+}
+'
 
 echo "\nSetup done."
+
