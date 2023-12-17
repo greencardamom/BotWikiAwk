@@ -656,7 +656,7 @@ function isembedded(tl) {
 #
 function stopbutton(button,bb,  command,butt,i) {
 
-  if(empty(StopButton)) return "RUN" - # stop button disabled
+  if(empty(StopButton)) return "RUN" # stop button disabled
 
  # convert https://en.wikipedia.org/wiki/User:GreenC_bot/button
  #         https://en.wikipedia.org/w/index.php?title=User:GreenC_bot/button
