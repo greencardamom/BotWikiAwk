@@ -26,14 +26,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-BEGIN {
+BEGIN { # Bot cfg
+
+  _defaults = "home      = /home/greenc/bots/XXXXXX/ \
+               email     = sample@example.com \
+               version   = 1.0 \
+               copyright = 2024"
+
+  asplit(G, _defaults, "[ ]*[=][ ]*", "[ ]{9,}")
   BotName = "XXXXXX"
+  Home = G["home"]
+  Agent = "Ask me about " BotName " - " G["email"]    
+  Engine = 3
+
 }
 
 @include "botwiki.awk"
 @include "library.awk"
 
-BEGIN {
+BEGIN { # Bot run
 
   Mode = "bot"   # set to "find" and it will search only and exit with a 1 (found something) or 0 (found nothing)
                  #  in "find" mode, run via 'project -s' to search local cache for articles containing actionable matches

@@ -4,7 +4,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2016-2018 by User:GreenC (at en.wikipedia.org)
+# Copyright (c) 2016-2024 by User:GreenC (at en.wikipedia.org)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,103 +24,55 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-#
-# Define paths used by programs that share this file
-#
+@include "syscfg"  # Paths to external programs and static strings
 
 BEGIN {
 
-  # 1. Stop button page - your stop button page
+  # Stop button page - your stop button page. Change to blank string if not using a stop button.
+  # This is a global default. You can override it for certain bots by adding StopButton to the bot's
+  # "Code block" below, see the example.
+
+  # StopButton = ""
   StopButton = "https://en.wikipedia.org/wiki/User:name/button"
 
-  # 2a. Your user page
+  # Your user page
+
   UserPage = "https://en.wikipedia.org/wiki/User:name"
 
-  # 2b. Your email address (for notifying when stop button is pressed when running from cron etc)
-  UserEmail = ""
+  # Your email address (for notifying when stop button is pressed when running from cron etc)
+  # Use the default Exe["to_email"] defined in syscfg.awk - or set a different one here
 
-  # 3. Paths, agent, and engine
-  #   . BotName defined in the BEGIN{} section of calling programs (bug, driver, project etc)
-  #   . Home path should end with a trailing "/"
-  #   . Engine describes how parallel/concurrent processing will be handled
-  #      0 = none or GNU Parallel on a single computer ie. not on Toolforge
-  #      1 = Toolforge Array (single job submitted for all articles - fastest method)
-  #      2 = Toolforge Jsub  (one job submitted per article - slower)
-  #      3 = Toolforge non-framework eg. using upload() instead of runbot.awk
-  switch(BotName) {
+  if(!empty(Exe["to_email"]))
+    UserEmail = Exe["to_email"]
+  else
+    UserEmail = "sample@example.com"
 
-    case "mybot":                                             # Custom bot paths  
-      Home = "/home/adminuser/mybot/" BotName "/"  
-      Agent = UserPage " (ask me about " BotName ")"
-      Engine = 0
-      break
+  # Optional location of bot configuration vs. in the top BEGIN{} section of the bot
 
-    default:                                                  # Default both paths
-      Home = "/home/adminuser/BotWikiAwk/bots/" BotName "/"  
-      Agent = UserPage " (ask me about " BotName ")"
-      Engine = 0
-      break
-  }  
+  if(empty(Agent) && empty(Engine)) { 
 
-  # 4. Default wget options (include lead/trail spaces)
-  Wget_opts = " --no-cookies --ignore-length --user-agent=\"" Agent "\" --no-check-certificate --tries=5 --timeout=120 --waitretry=60 --retry-connrefused "
+    switch(BotName) {
 
-  # 5. Dependencies 
+      case "mybot":                                             # Custom bot paths  
+        Home = "/home/adminuser/bots/" BotName "/"  
+        Agent = UserPage " (ask me about " BotName ")"
+        Engine = 0
+        break
 
-  # 5a. Dependencies for library.awk 
+      default:                                                  # Default both paths
+        Home = "/home/adminuser/bots/" BotName "/"  
+        Agent = UserPage " (ask me about " BotName ")"
+        Engine = 0
+        break
+    }  
 
-  Exe["date"] = ...
-  Exe["mkdir"] = ...
-  Exe["rm"] = ...
-  Exe["sed"] =  ...
-  Exe["tac"] = ...
-  Exe["timeout"] = ... 
-  Exe["wget"] = ...
-  Exe["mailx"] = ...
+  }
 
-  # 5b. driver.awk
-  Exe["grep"] = ...
-  Exe["gzip"] = ...
-  Exe["mv"] = ...
+  # Bot executable 
 
-  # 5c. bug.awk
-  Exe["cat"] = ...
-  Exe["diff"] = ...
-
-  # 5d. project.awk
-  Exe["cp"] = ...
-  Exe["head"] = ...
-  Exe["ls"] = ...
-  Exe["tail"] = ...
-  
-  # 5e. runbot.awk
-  Exe["parallel"] = ... 
-  Exe["zotkill"] = "zotkill.pl"     # file locking utility for Toolforge concurrency
-
-  # 5f. makebot.awk
-  Exe["chmod"] = ...
-  Exe["ln"] = ...
-
-  # 6. Color inline diffs. Requires wdiff
-  #   sudo apt-get install wdiff
-  Exe["coldiff"] = "coldiff"
-
-  # 7, Bell command - play a bell sound. Requires 'play' such as SoX
-  #   sudo apt-get install sox
-  #    (copy a .wav file from Windows)
-  #    Use full path/filenames for player and sound file
-  # Exe["bell"] = "/usr/bin/play -q /home/adminuser/scripts/chord.wav"
-
-  # 8. bot executables local
   Exe[BotName]  = Home BotName
 
-  # 9, bot executables global
-  Exe["bug"] = "bug.awk"
-  Exe["project"] = "project.awk"
-  Exe["driver"] = "driver.awk"
-  Exe["wikiget"] = "wikiget.awk"
-
-  # 10. Bot setup routines
+  # Bot setup routines
   
   if(BotName != "makebot") {
     if(! checkexists(Home)) {
@@ -267,23 +219,37 @@ function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
 #
 # getwikisource - download plain wikisource. 
 #
-# . default: follows "#redirect [[new name]]"
+# . default : follows "#redirect [[new name]]" at en.wikipedia.org
 # . optional: redir = "follow/dontfollow"
-# . consider using 'wikiget -w' 
+# . optional: hostname = "en" or "commons" etc
+# . optional: domain = "wikipedia.org" or "wikimedia.org" etc
+# . optional: revid = revision ID
 #
-function getwikisource(namewiki, redir,    f,ex,k,a,b,command,urlencoded,r,redirurl) {
+# . Returns a proto-tuple see tup() in library.awk 
+#
+function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,command,urlencoded,r,redirurl) {
 
   if(redir !~ /follow|dontfollow/)
     redir = "dontfollow"
+
+  if(! domain)
+    domain = "wikipedia.org"
+  if(! hostname)
+    hostname = "en"
 
   urlencoded = urlencodeawk(strip(namewiki))
 
   # See notes on action=raw at: https://phabricator.wikimedia.org/T126183#2775022
 
-  command = "https://en.wikipedia.org/w/index.php?title=" urlencoded "&action=raw"
+  if(empty(revid))
+    command = "https://" hostname "." domain "/w/index.php?title=" urlencoded "&action=raw"
+  else
+    command = "https://" hostname "." domain "/w/index.php?title=" urlencoded "&action=raw&oldid=" revid
+
   f = http2var(command)
-  if(length(f) < 5) {                                             # Bug in ?action=raw - sometimes it returns a blank page
-    command = "https://en.wikipedia.org/wiki/Special:Export/" urlencoded
+  if(length(f) < 5 && empty(revid)) {                                    # Bug in ?action=raw - sometimes it returns a blank page
+    command = "https://" hostname "." domain "/wiki/Special:Export/" urlencoded
+
     f = http2var(command)
     if(tolower(f) !~ /[#][ ]{0,}redirect[ ]{0,}[[]/) {
       split(f, b, /<text xml[^>]*>|<\/text/)
@@ -296,16 +262,16 @@ function getwikisource(namewiki, redir,    f,ex,k,a,b,command,urlencoded,r,redir
     match(f, /[#][ ]{0,}[Rr][Ee][^]]*[]]/, r)
     print r[0]
     if(redir ~ /dontfollow/) {
-      print namewiki " : " r[0] >> "redirects"
-      return "REDIRECT"
+      # print namewiki " : " r[0] >> "redirects"
+      return "REDIRECT" SUBSEP r[0]
     }
     gsub(/[#][ ]{0,}[Rr][Ee][Dd][Ii][^[]*[[]/,"",r[0])
     redirurl = strip(substr(r[0], 2, length(r[0]) - 2))
 
-    command = "https://en.wikipedia.org/w/index.php?title=" urlencodeawk(redirurl) "&action=raw"
+    command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirurl) "&action=raw"
     f = http2var(command)
   }
-  return strip(f)
+  return strip(f) SUBSEP ""
 
 }
 
@@ -393,6 +359,108 @@ function bell(  a,i,ok) {
     }
   }
   if(ok) sys2var(Exe["bell"])
+
+}
+
+#
+# deflateUniversal
+#
+# Similar to deflate() but works in any wiki language.
+# It will encode any template it finds embeded within a preset collection of template names defined by ReCites 
+#
+# Example: "{{cite web|title={{whatever}}|author={{Sono}}}}" becomes "{{cite web|title=DefNonOrdCiteAa1.1z|author=DefNonOrdCiteAa1.2z}}"
+#          DefNonOrdCiteAa["DefNonOrdCiteAa1.1z"] = "{{whatever}}"
+#          DefNonOrdCiteAa["DefNonOrdCiteAa1.2z"] = "{{Sono}}"
+#
+# inflate() will restore
+#
+# Requires ReCites to be defined globally eg. 
+#          ReCites = "[{][ ]{0,}[{]" ReSpace "(Cita web|Citeweb|Web cite)" ReSpace "[|][^}]+[}][ ]{0,}[}]"
+#
+function deflateUniversal(article,   c,i,field,sep,inner,inner2,r,k,open,open2,embed,a,cc,ii,newtl,codename,ReSpace,ReTemplate,ReEmbedded,ti) {
+
+  ti = IGNORECASE
+  IGNORECASE = 1
+
+  ReSpace    = "[\n\r\t]*[ ]*[\n\r\t]*[ ]*[\n\r\t]*"
+  ReTemplate = "[{]" ReSpace "[{][^}]+[}]" ReSpace "[}]"
+  ReEmbedded = "[{]" ReSpace "[{][^{]*[{]" ReSpace "[{]"
+  # ReCites is defined globally
+
+  # Collapse newlines
+  #gsub("\n"," zzCRLFzz",article)
+
+  r = 0
+
+  for(k = 1; k <= 5; k++) {  # Check for up to 5 embedded templates in a cite template (including 2-layer deep)
+
+    c = patsplit(article, field, ReCites, sep)
+
+    for(i = 1; i <= c; i++) {
+
+      if(countsubstring(field[i], "{{") == 1) # no more embedded
+        continue
+
+      open1 = open2 = embed = 0
+      r++
+
+      cc = split(field[i], a, "")
+      for(ii = 1; ii <= cc; ii++) {
+
+        if(a[ii] == "{" && open1 == 1 && open2 == 1) {
+          a[ii] = "_HIDEO_"
+          embed = 1
+        }
+
+        if(a[ii] == "}" && embed == 1) 
+          a[ii] = "_HIDEC_"
+
+        if(a[ii] == "{" && open1 == 1 && open2 == 0)
+          open2 = 1
+
+        if(a[ii] == "{" && open1 == 0 && open2 == 0)
+          open1 = 1
+
+      }
+
+      newtl = join(a, 1, length(a), "")
+      gsub("_HIDEO__HIDEO_", "_HIDESETO_", newtl)
+      gsub("_HIDEC__HIDEC_", "_HIDESETC_", newtl)
+      gsub("_HIDEO_", "{", newtl)
+      gsub("_HIDEC_", "}", newtl)
+      if(newtl ~ "_HIDESETO_" && newtl ~ "_HIDESETC_") {
+        if(match(newtl, "_HIDESETO_.*$", inner) > 0) {
+          if(newtl ~ "^[{][{][^{]+[{]") continue # safety checks
+          if(inner[0] !~ "_HIDESETC_") continue
+          codename = "DefNonOrdCiteAa1." r "z"
+          if(countsubstring(inner[0], "_HIDESETO_") == 2) {  # embedded within embedded
+            inner[0] = subs("_HIDESETO_", "{{", inner[0])
+            if(match(inner[0], "_HIDESETO_.*$", inner2) > 0) {
+              newtl = gsubs(inner2[0], codename, newtl)
+              gsub("_HIDESETO_", "{{", inner2[0])
+              gsub("_HIDESETC_", "}}", inner2[0])
+              gsub("_HIDESETO_", "{{", newtl)
+              gsub("_HIDESETC_", "}}", newtl)
+              DefNonOrdCiteAa[codename] = inner2[0]
+              field[i] = newtl
+            }
+          }
+          else {
+            newtl = gsubs(inner[0], codename, newtl)
+            gsub("_HIDESETO_", "{{", inner[0])
+            gsub("_HIDESETC_", "}}", inner[0])
+            gsub("_HIDESETO_", "{{", newtl)
+            gsub("_HIDESETC_", "}}", newtl)
+            DefNonOrdCiteAa[codename] = inner[0]
+            field[i] = newtl
+          }
+        }
+      }
+    }
+    article = unpatsplit(field,sep)
+  }
+  IGNORECASE = ti
+  return article
 
 }
 
@@ -588,12 +656,14 @@ function isembedded(tl) {
 #
 function stopbutton(button,bb,  command,butt,i) {
 
+  if(empty(StopButton)) return "RUN" - # stop button disabled
+
  # convert https://en.wikipedia.org/wiki/User:GreenC_bot/button
  #         https://en.wikipedia.org/w/index.php?title=User:GreenC_bot/button
   if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
     StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
 
-  command = "timeout --forground 20s wget -q -O- " shquote(StopButton "&action=raw")
+  command = "timeout --foreground 20s wget -q -O- " shquote(StopButton "&action=raw")
   button = sys2var(command)
 
   if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
@@ -637,24 +707,29 @@ function stopbutton(button,bb,  command,butt,i) {
 #   Example:
 #      upload(fp, a[i], "Convert SHORTDESC magic keyword to template (via [[User:GreenC bot/Job 9|shorty]] bot)", G["log"], BotName, "en")
 #
-function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,command,result,debug,article,i,re,dest,tries) {
+# Return 0 if page was not modified for any reason. Return 1 if page was modified.
+#
+function upload(wikisource, wikiname, summary, logdir, botname, lang, project,    name,command,result,debug,article,i,re,dest,tries,retval) {
 
     debug = 0  # 0 = off, 1 = list discoveries don't upload, 2 = print stderr msgs
 
     name = strip(wikiname)
 
+    if(empty(project))
+      project = "wikipedia"
+
     if(debug == 1) {
       stdErr("Found " name)
       print name >> logdir "discovered"
-      return
+      return 0
     }
 
     # {{bots|deny=<botlist>}}
     if(match(wikisource, /[{][{][ ]*[Bb]ots[ \t]*[\n]?[ \t]*[|][^}]*[}]/, dest)) {
-      re = regesc3(botname) "(bot)?"
+      re = regesc3(botname) "bot"
       if(dest[0] ~ re) {
         print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Error: Bot deny" >> logdir "error"
-        return
+        return 0
       }
     }
 
@@ -663,7 +738,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
       print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Stop Button" >> logdir "error"
       if(!empty(UserEmail) && !empty(Exe["mailx"]))
         sys2var(Exe["mailx"] " -s \"NOTICE: " botname " bot halted by stop button.\" " UserEmail " < /dev/null")
-      return
+      return 0
     }
     if(debug == 2) print "endbutton"
 
@@ -676,7 +751,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
       tries = 3
       for(i = 1; i <= tries; i++) {
 
-        command = "timeout --foreground 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l " lang
+        command = "timeout --foreground 20s " Exe["wikiget"] " -E " shquote(name) " -S " shquote(summary) " -P " shquote(article) " -l " shquote(lang) " -z " shquote(project)
         if(debug == 2) stdErr(command)
         result = sys2var(command)
 
@@ -684,18 +759,21 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
           if(debug == 2) stdErr(botname ".awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
           print name >> logdir "discovered"
           close(logdir "discovered")
+          retval = 1
           break
         }
         else if(result ~ /[Nn]o[-]?[Cc]hange/ ) {
           if(debug == 2) stdErr(botname ".awk: wikiget status: No change. " name)
           print name >> logdir "nochange"
           close(logdir "nochange")
+          retval = 0
           break
         }
         else if(i == 3) {
           if(debug == 2) stdErr(botname ".awk: wikiget status: Failure ('" result "') uploading to Wikipedia. " name)
           print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- upload fail: " result >> logdir "error"
           close(logdir "error")
+          retval = 0
           break
         }
 
@@ -704,8 +782,8 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
       }
     }
     removefile(article)
+    return retval
 }
-
 
 #
 # Write to file in parallel environment account for file locks                  
@@ -714,7 +792,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang,    name,co
 #         
 function parallelWrite(msg, file, eng,    command) {
 
-  if(eng == 1 || eng == 2 || eng = 3) {
+  if( (eng == 1 || eng == 2 || eng == 3) && !empty(Exe["zotkill"]) ) {
     command = "echo " shquote(msg) " | " Exe["zotkill"] " " shquote(file)
     sys2var(command)
   }
@@ -723,4 +801,3 @@ function parallelWrite(msg, file, eng,    command) {
     close(file)
   }
 }
-

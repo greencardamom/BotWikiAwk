@@ -26,9 +26,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# bot name
+# -------------------------------------------------
+
+# Derive the bot's name and home dir from the current directory
+# The bot's home dir should have the same name as the bot
+#   eg. /home/admin/bot/accdate is the home directory for a bot called accdate.awk
+# Then you can run this utility after cd'ing to the ~/accdate directory
+# See the file SETUP for meaning of the Engine parameter
+
 BEGIN {
-  BotName = "makebot"
+
+  delete _pwdA
+  _pwdC = split(ENVIRON["PWD"],_pwdA,"/")
+  BotName = _pwdA[_pwdC]
+  for(_i=1;_i<_pwdC;_i++) _a = _a _pwdA[_i] "/"
+  Home = _a
+  Agent = "Ask me about " BotName
+  Engine = 0
+
 }
 
 @include "botwiki.awk"

@@ -1,0 +1,10 @@
+# Awk Uniq
+
+#
+# Alternative to "sort file.txt | uniq" or "sort -u file.txt"
+#
+# Usage: cat file.txt | auniq
+#
+# Use case: maintains the original sort order
+#
+/usr/local/bin/awk '!s[$0]++'

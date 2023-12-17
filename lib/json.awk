@@ -8,7 +8,7 @@
 #   Copyright MIT license
 #   Copyright (c) 2007-2011 Aleksey Cheusov <vle@gmx.net>
 #   Copyright (c) 2012 Jim Pryor <dubiousjim@gmail.com>
-#   Copyright (c) 2018 GreenC (User:GreenC at en.wikipedia.org)
+#   Copyright (c) 2018-2024 GreenC (User:GreenC at en.wikipedia.org)
 #
 
 #
@@ -362,4 +362,5 @@ function splitja(jsonarr, arr, indexn, value, offset, lasti,   c,ja,a) {
   }
   return length(arr)   
 }
+
 

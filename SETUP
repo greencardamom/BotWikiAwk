@@ -1,0 +1,97 @@
+=== syscfg.awk ===
+
+This file in ~/BotWikiAwk/lib contains paths to dependencies and static strings.
+
+When running setp.sh it is automatically configured. If it can't find a unix tool it 
+will define the location as a blank string. This is not important, unless you need 
+that tool for your bot. For example 'shuf' is rarely needed so don't worry that it's
+missing - unless you need it, then install it, and manually add it's location to syscfg.
+
+=== Email ===
+
+BWA has support for sending email from any computer that has curl installed no other
+dependencies are reqired. You will need an upstream SMTP server such as what an ISP
+provides for POP3/IMAP email clients.
+
+Email settings are in ~/BotWikiAwk/lib/syscfg.awk see that file for instructions.
+
+=== Bot cfg ===
+
+When creating a new bot, it will require configuration information. There are two 
+locations cfg information can be placed, your choice. Each bot chooses one of the
+two locations. Diffrent bots can use different location methods.
+
+The advantage of location 2 is it keeps all information about the bot in a single 
+file which makes its more portable and easier to maintain. Location 1 is the 
+original design of BWA and maintained for backward compatibility. 
+
+ ==== Location 1 ====
+
+In ~/BotWikiAwk/lib/botwiki.awk there is a case statement where a block of code
+defines the needed parameters for each bot. For example:
+
+      case "accdate":                                          
+        Home = "/home/admin/bots/" BotName "/"
+        Agent = UserPage " (ask me about " BotName ")"
+        Engine = 0
+        break
+
+Then at the top of the program, define the bot's name like this:
+
+        BEGIN {
+          BotName = "accdate"
+        }
+
+This block comes before the @include statements.
+
+ ==== Location 2 ====
+
+All cfg info resides in a BEGIN{} section at the top of the bot program. Nothing goes
+in ~/BotWikiAwk/lib/botwiki.awk 
+
+The configuration looks like this. Notice it comes before the @include statements
+
+	BEGIN { # Bot cfg
+	
+	  _defaults = "home      = /home/admin/bots/accdate/ \
+	               email     = sample@example.com \
+	               version   = 1.0 \
+	               copyright = 2024"
+
+	  asplit(G, _defaults, "[ ]*[=][ ]*", "[ ]{9,}")
+	  BotName = "accdate"
+	  Home = G["home"]
+	  Agent = "Ask me about " BotName " - " G["email"]    
+	  Engine = 0
+
+	}
+
+	@include "botwiki.awk"
+	@include "library.awk"
+
+In this BEGIN{} block you can define the bot's home directory, email, BotName and Engine.
+
+The options: 
+
+        . _defaults - spacing is significant, there can be no blank spaces after each \, no tabs, the
+           home directory should end with a / as seen above. See the ~/BotWikiAwl/example-bots for
+           real examples. makebot can also create this section for you automatically. 
+	. 'BotName' is the name of the directory defined in the _defaults which is also the name
+           of the awk program. Thus, the BotName of "accdate" will be in the directory /home/admin/bots/accdate
+           which contains a program accdate.awk
+	. 'Agent' is the user-agent used by wget/curl - or you can create a global Agent in botwiki.awk
+	. 'StopButton' is the URL to your bot's stop button page. If included here, it overrides the
+	   global default set in botwiki.awk - if StopButton is blank, BWA won't check it.
+	. 'Engine' is the parallel/concurrency method used for this bot:
+
+	     0 = none or GNU Parallel on a single computer
+	     1 = (Deprecated) Toolforge Array (single job submitted for all articles - fastest method)
+	     2 = (Deprecated) Toolforge Jsub  (one job submitted per article - slower)       
+	     3 = Non-framework eg. using upload() instead of runbot.awk       
+
+           It is recommended to use Engine 0 for bots using the BotWikiAwk framework (eg. runbot, etc)
+           For bots that are standalone tools, use Engine 3.
+
+	   NOTE: As of 2024, Toolforge no longer supports SGE (Sun Grid Engine). BotWikiAwk will only
+	         work in modes 0 or 3, for now. A future version of BWE will support the new
+	         method of concurrency at Toolforge.

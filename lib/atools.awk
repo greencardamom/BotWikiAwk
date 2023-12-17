@@ -6,7 +6,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2018 by User:GreenC (at en.wikipedia.org)
+# Copyright (c) 2018-2024 by User:GreenC (at en.wikipedia.org)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -141,7 +141,7 @@ BEGIN {
   # see https://phabricator.wikimedia.org/T178106 for a list of templates
   # copy list to file "cites-list" and run this awk command to generate the citesre regex statement then copy-paste it here
   # awk -ilibrary 'BEGIN{printf "[{][{][ ]*(";for(i=1;i<=splitn("cites-list",a,i);i++){gsub(/^\"{{|}}\",?$/,"",a[i]);printf a[i] "|" }; print ")[^}]+}}[ ]*"}'
-  citesre = "[{][{][ ]*(A Short Biographical Dictionary of English Literature|AZBilliards|BDMag|Bokref|Catholic[-]hierarchy|Cita audio|Cita conferencia|Cita conferenza|Cita DANFS|Cita enciclopedia|Cita Enciclopedia Católica|Cita entrevista|Cita episodio|Cita grupo de noticias|Cita historieta|Cita immagine|Cita juicio|Cita libro|Cita lista de correo|Cita mapa|Cita news|Cita notas audiovisual|Cita noticia|Cita pubblicazione|Cita publicación|Citar web|Cita tesis|Cita testo|Citation|Citation step free tube map|Citation Style documentation|Cita TV|Cita vídeo|Cita visual|Cita web|Cite act|Cite Australasia|Cite AV media|Cite AV media notes|Cite book|Cite comic|Cite comics image|Cite comics image lrg|Cite conference|Cite constitution|Cite DVD notes|Cite encyclopedia|Cite episode|Citeer boek|Citeer encyclopedie|Citeer journal|Citeer nieuws|Citeer tijdschrift|Citeer web|Cite Hansard|Cite IETF|Cite interview|Cite IrishBio|Cite[ ]*journal|Cite[ ]*letter|Cite[ ]*magazine|Cite mailing list|Cite[ ]*map|Cite Memoria Chilena|Cite music release notes|Cite news|Cite newsgroup|Cite PH act|Cite podcast|Cite postcode project|Cite press release|Cite QPN|Cite quick|Cite report|Cite SBDEL|Cite serial|Cite sign|Cite speech|Cite sports[-]reference|Cite techreport|Cite thesis|Cite Transperth timetable|Cite Trove newspaper|Cite tweet|Cite video|Cite vob|Cite web|Cite wikisource|Cite[ ]*document|Cite[ ]*abstract|Cite[ ]*paper|College athlete recruit end|Cytuj stronę|DNZB|Documentación cita|Etude|Gazette WA|Goalzz|Harvard reference|Harvrefcol|Internetquelle|IPMag|IPSite|ITIS|IUCN|Kilde artikkel|Kilde avhandling|Kilde avis|Kilde AV[-]medium|Kilde bok|Kilde konferanse|Kilde oppslagsverk|Kilde pressemelding|Kilde www|KLISF|Lien conférence|Lien vidéo|Lien web|Macdonald Dictionary|MTRsource|Obra citada|Online source|PBMag|Press|Pressmeddelanderef|SA Rugby Article|Silvics|Singapore legislation|Source archived|Tidningsref|Tidskriftsref|Vancite book|Vancite journal|Vancite news|Vancite web|Vcite book|Vcite journal|Vcite news|Vcite web|Verkkoviite|Webbref|WebbrefSV|Web kaynağı|Web reference|WsPSM|Статья)[^}]+}}[ ]*"
+  citesre = "[{][{][ ]*(A Short Biographical Dictionary of English Literature|AZBilliards|BDMag|Bokref|Catholic[-]hierarchy|Cita audio|Cita conferencia|Cita conferenza|Cita DANFS|Cita enciclopedia|Cita Enciclopedia Católica|Cita entrevista|Cita episodio|Cita grupo de noticias|Cita historieta|Cita immagine|Cita juicio|Cita libro|Cita lista de correo|Cita mapa|Cita news|Cita notas audiovisual|Cita noticia|Cita pubblicazione|Cita publicación|Citar web|Cita tesis|Cita testo|Citation|Citation step free tube map|Citation Style documentation|Cita TV|Cita vídeo|Cita visual|Cita web|Cite act|Cite Australasia|Cite AV media|Cite AV media notes|Cite book|Cite comic|Cite comics image|Cite comics image lrg|Cite conference|Cite constitution|Cite DVD notes|Cite encyclopedia|Cite episode|Citeer boek|Citeer encyclopedie|Citeer journal|Citeer nieuws|Citeer tijdschrift|Citeer web|Cite Hansard|Cite IETF|Cite interview|Cite IrishBio|Cite[ ]*journal|Cite[ ]*letter|Cite[ ]*magazine|Cite mailing list|Cite[ ]*map|Cite Memoria Chilena|Cite music release notes|Cite news|Cite newsgroup|Cite PH act|Cite podcast|Cite postcode project|Cite press release|Cite QPN|Cite quick|Cite report|Cite SBDEL|Cite serial|Cite sign|Cite speech|Cite sports[-]reference|Cite techreport|Cite thesis|Cite Transperth timetable|Cite Trove newspaper|Cite tweet|Cite video|Cite vob|Cite web|Cite wikisource|Cite[ ]*document|Cite[ ]*abstract|Cite[ ]*paper|College athlete recruit end|Cytuj strone|DNZB|Documentación cita|Etude|Gazette WA|Goalzz|Harvard reference|Harvrefcol|Internetquelle|IPMag|IPSite|ITIS|IUCN|Kilde artikkel|Kilde avhandling|Kilde avis|Kilde AV[-]medium|Kilde bok|Kilde konferanse|Kilde oppslagsverk|Kilde pressemelding|Kilde www|KLISF|Lien conférence|Lien vidéo|Lien web|Macdonald Dictionary|MTRsource|Obra citada|Online source|PBMag|Press|Pressmeddelanderef|SA Rugby Article|Silvics|Singapore legislation|Source archived|Tidningsref|Tidskriftsref|Vancite book|Vancite journal|Vancite news|Vancite web|Vcite book|Vcite journal|Vcite news|Vcite web|Verkkoviite|Webbref|WebbrefSV|Web kaynagi|Web reference|WsPSM|Статья)[^}]+}}[ ]*"
   # use of citesre requires IGNORECASE=1 to be set
 
 }
@@ -279,6 +279,18 @@ function urltimestamp(url,  c,a,i) {
       }
     }
   }
+                                          # http://arquivo.pt/noFrame/replay/20091007194454/http..
+  if(isporto(url)) {
+    c = split(url, a, /\//)
+    for(i=0;i<=c;i++) {
+      if(!empty(a[i])) {
+        if(a[i] ~ /^noFrame$/ && a[i+1] ~ /^replay$/) 
+          return a[i+2]
+      }
+    }
+  }
+
+
 
                                               # http://collection.internetmemory.org/nli/20160525150342/http
   if(iseuropa(url) || ismemory(url)) {        # http://collection.europarchive.org/nli/20160525150342/http
@@ -857,3 +869,4 @@ function webciteid(url,  c,a,code) {
   return "error"
 
 }
+

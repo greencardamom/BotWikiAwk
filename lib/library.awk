@@ -1,12 +1,10 @@
 #
 # General Library routines
 #
-# Unless otherwise noted, code is by GreenC
-#
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2016-2018 by User:GreenC (at en.wikipedia.org)
+# Copyright (c) 2016-2024 by User:GreenC (at en.wikipedia.org)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +25,7 @@
 # THE SOFTWARE.
 
 @load "filefuncs"
+@include "syscfg" # Paths to external programs and define static strings
 
 # [[ __________________________________________________________________________________ ]]
 # [[ __________________ TOC ___________________________________________________________ ]]
@@ -39,47 +38,6 @@
 #  . Numbers
 #  . URL Encode/Decode
 #
-
-# BEGIN {
-
-  # The library has dependencies on external programs (eg. 'rm')
-  # library.awk uses the global array Exe[] to hold path/filenames
-  #   eg. Exe["rm"] = "/bin/rm"
-  #  
-  # Exe[] can be pre-defined statically here or for example botwiki.awk
-  #   eg.
-  #    Exe["rm"]    = "/bin/rm"
-  #    Exe["mkdir"] = "/bin/mkdir"
-  #    ...
-  #
-  # Or, the below code will create Exe[] using 'which rm' to determine the paths.
-  # If Exe[] is already defined (ie. static method) it will leave Exe[] alone.
-  # Either way, the below will check if Exe[] has been defined for programs
-  # used in this library, and abort if not.
-  #
-
-  #if(_SkipSetup != 1) {  # skip if called by setup.sh
-
-  #  _libraryawkPrograms = "wget date timeout sed tac rm mkdir"
-
-  #  Exe["_empty"]
-  #  if( length(Exe) < 2) {
-  #    delete Exe
-  #    spliti(_libraryawkPrograms, Exe, " ")
-  #  }
-  #  else
-  #    _libraryawkExeDefined = 1
-  #  for(_libraryawkI in Exe) {
-  #    if(_libraryawkI == "_empty") continue
-  #    if(! _libraryawkExeDefined)
-  #      Exe[_libraryawkI] = sys2var("which " _libraryawkI)
-  #    if( empty(Exe[_libraryawkI])) {
-  #      print "library.awk: Unable to find '" _libraryawkI "' in path"
-  #      exit
-  #    }
-  #  }
-  # }
-  # }
 
 # [[ __________________________________________________________________________________ ]]
 # [[ __________________ Files and dirs ________________________________________________ ]]
@@ -394,7 +352,7 @@ function mkdir(dir,    var, cwd) {
 #
 #   Requirement: @load "filefuncs"
 #
-function chDir(dir) {
+function chDir(dir, ret) {
 
     ret = chdir(dir)
     if (ret < 0) {
@@ -503,26 +461,46 @@ function sys2varStderr(command        ,fish,scale,ship,c,a) {
 # http2var() - replicate "wget -q -O- http://..." 
 #
 #   . return the HTML page as a string
-#   . optionally use wget options 'Wget_opts' gobally defined elsewhere
-#   . converts ' to %27
+#   . optionally use wget options 'Wget_opts' gobally defined in syscfg.awk - or define it locally
+#   . converts ' to %27 and ’ to %E2%80%99
 #
 #   Requirement: Exe["wget"]
 #   Requirement: Exe["timeout"]
 #
-function http2var(url,  debug) {
+function http2var(url,tries,  debug,i,op) {
 
      debug = 0
 
      if ( ! checkexe(Exe["wget"], "wget") || !  checkexe(Exe["timeout"], "timeout"))
-       return 
+       return
 
-     if (url ~ /'/) 
-         gsub(/'/, "%27", url)  
+     if(empty(tries))
+       tries = 20
+
+     if (url ~ /'/)
+         gsub(/'/, "%27", url)
+     if (url ~ /’/)
+         gsub(/’/, "%E2%80%99", url)
+
      command = Exe["timeout"] " 20m " Exe["wget"] Wget_opts " -q -O- " shquote(url)
-     if(debug) stdErr(command) 
-     return sys2var( command )
-}
 
+     if(debug) stdErr(command)
+
+     for(i = 1; i <= int(tries); i++) {
+       op = sys2var( command )
+       if(!empty(op))
+         return op
+       if(debug) stdErr("http2var retry " i)
+       if(! empty(Exe["sleep"]))
+         sleep(2, "unix")
+       else
+         sleep(2)
+     }
+
+     # Depending on your application, you can add an email() notification when tries reaches the maximum 
+     #  It signifies the remote site is not responding. 
+
+}
 
 # 
 # dateeight() - return current date: 20170610
@@ -561,9 +539,9 @@ function sleep(seconds,opt,   t) {
 #
 function stdErr(s, flag) {
     if (flag == "n")
-        printf("%s",s) >> "/dev/stderr"
+        printf("%s",s) > "/dev/stderr"
     else
-        printf("%s\n",s) >> "/dev/stderr"
+        printf("%s\n",s) > "/dev/stderr"
     close("/dev/stderr")
 }
 
@@ -652,6 +630,63 @@ function getopt(argc, argv, options,    thisopt, i) {
     return thisopt
 }
 
+#
+# Send email via external SMTP server
+#
+#   Requirements: Exe["curl"] = /path/curl
+#                 Exe["email_auth"] = /path/filename
+#                  
+#   Exe["email_auth"]:
+#      This filename contains a single line with SMTP server authentication credentials. For example:
+#        smtp://myprovider.net:26/novalidate-cert/user=joe@mydomain.com
+#
+#   If your application has "@include botwiki" or "@include library" or "@include syscfg" nothing more needs to be done. 
+#      See syscfg.awk for default email settings.
+#
+#   You can adjust the values of Exe["from_email"] and Exe["to_email"] on the fly in your application.
+#
+#   Invoke like this:
+#
+#      email(Exe["from_email"], Exe["to_email"], "NOTIFY: Program Aborted", "This is the body")
+#
+#   Or simply like this with static From: and To: strings:
+#
+#      email("payables@mydomain.com", "office@example.com", "Payment due", "This is the body")
+#
+function email(from, to, subject, body,   outfile,s) {
+
+  if(empty(from) || empty(to) ) {
+    stdErr("email() in library.awk has empty From:, or To:, or Subject:")
+    return 0
+  }
+  if(empty(Exe["curl"])) {
+    stdErr("Curl not defined for email() in library.awk - Add Exe[\"curl\"] = /path/curl to your program")
+    return 0
+  }
+  if(empty(Exe["email_auth"]) || !exists2(Exe["email_auth"]) ) {
+    stdErr("Email authentication not defined. See email() in library.awk for instructions")
+    return 0
+  }
+
+  outfile = mktemp("/tmp/email.XXXXXX", "u")
+
+  print "To: " to > outfile
+  print "Subject: " subject >> outfile
+  if(!empty(body)) {
+    print "" >> outfile
+    print body >> outfile
+  }
+  close(outfile)
+
+  emailauth = strip(readfile(Exe["email_auth"]))
+
+  # https://superuser.com/questions/1539589/curl-how-do-i-set-the-email-subject-when-using-f-multipart-attachment
+  s = Exe["curl"] " -s " shquote(emailauth) " --mail-from " shquote(from) " --mail-rcpt " shquote(to) " --upload-file " shquote(outfile)
+  sys2var(s)
+  removefile2(outfile)
+
+}
+
 
 # [[ __________________________________________________________________________________ ]]
 # [[ ______________________ Strings ___________________________________________________ ]]
@@ -681,7 +716,7 @@ function join(arr, start, end, sep,    result, i) {
 #       https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 #   . spliti() does reverse 
 #
-function join2(arr, sep, sortkey,         i,lobster,result) {
+function join2(arr, sep, sortkey,         i,lobster,result,save_sorted) {
 
     if (!empty(sortkey)) {
         if ("sorted_in" in PROCINFO) 
@@ -792,7 +827,7 @@ function endswith(str, suf,   len1, len2) {
 function clean(str,  safe) {           
     safe = str
     gsub(/\342\200\231/, "'", safe)
-    gsub(/\342\200\230/, "`", safe)
+    gsub(/\342\200\230/, "`", safe)                  
     gsub(/\342\200\246/, "…", safe)
     gsub(/\342\200\223/, "-", safe)
     gsub(/\342\200\224/, "—", safe)
@@ -1070,7 +1105,7 @@ function asplit(array, str, equals, space, aux, i, n) {
 #  . if array a & b have a same key eg. a["1"] = 2 and b["1"] = 3
 #      then b takes precendent eg. c["1"] = 3
 #           
-function concatarray(a,b,c) {
+function concatarray(a,b,c,  i) {
 
     delete c
     for (i in a)
@@ -1204,7 +1239,7 @@ function gsubs(pat, rep, str,    out, len, i, a, l) {
 #             for(i = 5; i <= splitn(ReadDB(key) "\n", a, i); i++)
 #       
 #
-function splitn(fp, arrSP, counter, start,    c,j,dSP,i) {
+function splitn(fp, arrSP, counter, start,    c,j,dSP,i,save_sorted) {
 
     if ( empty(start) ) 
         start = 1 
@@ -1262,7 +1297,7 @@ function wc(fp,  a) {
 #   . for other 'order' sort options 
 #       https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 #
-function sortstring(s,order,  a,j,b) {
+function sortstring(s,order,  a,j,b,save_sorted) {
 
     if("sorted_in" in PROCINFO) 
         save_sorted = PROCINFO["sorted_in"]
@@ -1285,7 +1320,7 @@ function sortstring(s,order,  a,j,b) {
 # comparestr() - compare two strings letter by letter. return 1 if strings are the same
 # 
 #   . normally done with "==" or "~" but this is useful in some cases such as
-#       when strings contain a ' and/or a " and via command-line           
+#       when strings contain ' and/or " and processing via command-line
 # 
 function comparestr(s1,s2,   a1,a2,c1,c2,i) {
 
@@ -1294,9 +1329,9 @@ function comparestr(s1,s2,   a1,a2,c1,c2,i) {
     if(c1 != c2) return 0
 
     for(i = 1; i <= c1; i++)
-        if(a1[i] != a2[i]) return 0
+      if(a1[i] != a2[i]) return 0
 
-  return 1         
+    return 1         
 
 }
 
@@ -1324,7 +1359,7 @@ function hidenewline(s) {
 #   . a possibly better soltion:
 #       http://stackoverflow.com/questions/1625162/get-text-content-from-mediawiki-page-via-api/21844127#21844127
 #
-function stripwikimarkup(str) {
+function stripwikimarkup(str,  safe) {
     safe = stripwikicomments(str)
     safe = stripwikitemplates(safe)
     safe = stripwikirefs(safe)
@@ -1605,7 +1640,7 @@ function isafraction(str,    safe) {
 #       "python3 -c \"from urllib.parse import urlsplit; import sys; o = urlsplit(sys.argv[1]); print(o." element ")\" " shquote(url)
 #   . returns full url on error
 #
-function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path) {
+function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path,c) {
 
   if(url ~ /^\/\//)        # Protocol-relative - assume http
     url = "http:" url
@@ -1724,6 +1759,7 @@ function hex2dec(s,  num) {
 #
 #  . if optional 'class' is "url" treat 'str' with best-practice URL encoding
 #     see https://perishablepress.com/stop-using-unsafe-characters-in-urls/
+#     Only do this when encoding a full URL not portion of a URL
 #  . if 'class' is "rawphp" attempt to match behavior of PhP rawurlencode()
 #  . otherwise encode everything except 0-9A-Za-z
 #
@@ -1774,4 +1810,5 @@ function urlencodelimited(url,  safe) {
     gsub(/[|]/, "%7C", safe)
     return safe
 }  
+
 

@@ -2,6 +2,9 @@
 
 # Convert short-form archive.is URLs to long-form per RFC
 
+# Note: this is an old version and included as an example for BotWikiAwk it 
+#       is no longer working for actual purposes.
+
 # The MIT License (MIT)
 #    
 # Copyright (c) 2016 by User:Green Cardamom (at en.wikipedia.org)
@@ -25,14 +28,25 @@
 # THE SOFTWARE.
 
 
-BEGIN {
+BEGIN { # Bot cfg
+
+  _defaults = "home      = /home/admin/bots/archiveis/ \
+               email     = sample@example.com \
+               version   = 1.0 \
+               copyright = 2024"
+
+  asplit(G, _defaults, "[ ]*[=][ ]*", "[ ]{9,}")
   BotName = "archiveis"
+  Home = G["home"]
+  Agent = "Ask me about " BotName " - " G["email"]
+  Engine = 0
+
 }
 
 @include "botwiki.awk"
 @include "library.awk"
 
-BEGIN {
+BEGIN { # Bot run
 
   Mode = "bot"   # set to "find" and it will search only and exit with a 1 (found something) or 0 (found nothing)
                  #  run via 'project -s' to search cache for articles containing actionable matches

@@ -1,5 +1,14 @@
 # Changes in reverse chronological order
 #
+# 0.60 Dec 15 2023 -  overhaul of botwiki.awk - bot configuration is now within each bot at a BEGIN{} section near the top.
+#                       This is a breaking change for existing user. See ~/example-bots for how it now looks in some sample bots.
+#                       You can optionally use the old location in botwiki.awk, or mix and match. See SETUP file for instructions.
+#                     create syscfg.awk moving Exe[""] definitions there so one can "@include library" without needing "@include botwiki"
+#                     add support in upload() for multiple WMF projects (wikibooks, etc) and languages
+#                     deprecate support for Toolforge concurrency Engines, due to drop of support for the Grid on Toolforge
+#                     add support for email() in library.awk - send emails with curl via a SMTP relay server
+#                     add 'auniq' to ~/bin - an alternative to uniq that doesn't require pre-sorting and maintains orig sort order
+#                     fix minor bugs in library.awk
 # 0.51 May 30 2021 - add some new functions to library.awk, various other updates
 # 0.50 Jun 18      - add "if(Engine != 3)" to botwiki.awk removing need for project-specific customizations in this location
 # 0.49 Mar 26      - add zotkill.pl for file locking ability on Toolforge

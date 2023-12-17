@@ -6,7 +6,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) 2016-2018 by User:GreenC (at en.wikipedia.org)
+# Copyright (c) 2016-2024 by User:GreenC (at en.wikipedia.org)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -131,6 +131,7 @@ fi
   }
 
   botwikifile = "lib/botwiki.awk"
+  syscfgfile = "lib/syscfg.awk"
 
   # set default path
   fp = readfile(botwikifile)
@@ -150,7 +151,7 @@ fi
 
    # set Exe[] paths
     if(a[i] ~ /^dependencies/) {
-      fp = readfile(botwikifile)
+      fp = readfile(syscfgfile)
       if(fp !~ /\][ ]*[=][ ]*[.]{3,}/) 
         continue
       stdErr("\nSet Exe[] paths")
@@ -160,8 +161,8 @@ fi
         p = strip(sys2var(sprintf("command -v %s",b[j])))
         re = "Exe\\[\"" b[j] "\"\\][ ]*[=][ ]*[.]{3,}"
         if(! p) {
-          stdErr("  . Warning: Unable to find path for Exe[\"" b[j] "\"] in " botwikifile " - please add it manually")
-          sub(re, "Exe[\"" b[j] "\"] = \"\"", fp)  
+          stdErr("  . Warning: Unable to find path for Exe[\"" b[j] "\"] in " syscfgfile " - please add it manually")
+          sub(re, "Exe[\"" b[j] "\"] = ", fp)  
         }
         else {
           if(sub(re, "Exe[\"" b[j] "\"] = \"" p "\"", fp)) {
@@ -170,8 +171,8 @@ fi
           }
         }
       }
-      print fp > botwikifile
-      close(botwikifile)
+      print fp > syscfgfile
+      close(syscfgfile)
     }
 
    # set shebangs and create symlinks
