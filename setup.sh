@@ -161,7 +161,7 @@ fi
         re = "Exe\\[\"" b[j] "\"\\][ ]*[=][ ]*[.]{3,}"
         if(! p) {
           stdErr("  . Warning: Unable to find path for Exe[\"" b[j] "\"] in " syscfgfile " - please add it manually")
-          sub(re, "Exe[\"" b[j] "\"] = ", fp)  
+          sub(re, "Exe[\"" b[j] "\"] = \"\"", fp)  
         }
         else {
           if(sub(re, "Exe[\"" b[j] "\"] = \"" p "\"", fp)) {

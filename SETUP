@@ -15,6 +15,10 @@ provides for POP3/IMAP email clients.
 
 Email settings are in ~/BotWikiAwk/lib/syscfg.awk see that file for instructions.
 
+You can test email is working with this command:
+
+  awk -ilibrary 'BEGIN{email(Exe["from_email"], Exe["to_email"], "Hi from my computer", "")}'
+
 === Bot cfg ===
 
 When creating a new bot, it will require configuration information. There are two 
