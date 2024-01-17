@@ -1,5 +1,6 @@
 # Changes in reverse chronological order
 #
+# 0.61 Jan 16 2024 -  minor fixes
 # 0.60 Dec 15 2023 -  overhaul of botwiki.awk - bot configuration is now within each bot at a BEGIN{} section near the top.
 #                       This is a breaking change for existing user. See ~/example-bots for how it now looks in some sample bots.
 #                       You can optionally use the old location in botwiki.awk, or mix and match. See SETUP file for instructions.

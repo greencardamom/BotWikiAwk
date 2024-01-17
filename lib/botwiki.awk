@@ -252,7 +252,7 @@ function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,comma
 
     f = http2var(command)
     if(tolower(f) !~ /[#][ ]{0,}redirect[ ]{0,}[[]/) {
-      split(f, b, /<text xml[^>]*>|<\/text/)
+      split(f, b, /<text (xml|bytes)[^>]*>|<\/text/)
       f = convertxml(b[2])
     }
   }

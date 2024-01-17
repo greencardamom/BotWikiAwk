@@ -671,6 +671,8 @@ function email(from, to, subject, body,   outfile,s) {
   outfile = mktemp("/tmp/email.XXXXXX", "u")
 
   print "To: " to > outfile
+  print "From: " from >> outfile
+  print "Date: " sys2var(Exe["date"] " -R") >> outfile   # Formated in RFC 2922 with -R switch
   print "Subject: " subject >> outfile
   if(!empty(body)) {
     print "" >> outfile
@@ -969,14 +971,13 @@ function regesc3 (str,   safe) {
 # regesc2() - escape regex symbols using backslash \x
 #
 #   Example:
-#      print regesc2("&^$(){}[].*+?|\\=:") produces \&\^\$\(\)\{\}\[\]\.\*\+\?\|\\\=\:
+#      print regesc2("^$(){}[].*+?|\\") produces \^\$\(\)\{\}\[\]\.\*\+\?\|\\
 #
 #  . consider instead using the non-regex subs() and gsubs()
 #
 function regesc2(str,   safe) {
     safe = str
-    gsub(/[][^$=:".*?+{}\\()|]/, "\\\\&", safe)
-    gsub(/&/,"\\\\\\&",safe)
+    gsub(/[\\.^$(){}\[\]|*+?]/, "\\\\&", safe)
     return safe
 }
 

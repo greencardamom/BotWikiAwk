@@ -129,7 +129,7 @@ function parse_json(str, T, V,  slack,    c,s,n,a,A,b,B,C,U,W,i,j,k,u,v,w,root) 
 
     # cleanup types and values
     for (i=1; i<root; i++) {
-        if (T[i] ~ /^\"/) {
+        if (T[i] ~ /^"/) {
             b = split(substr(T[i], 2, length(T[i])-2), B, /\\/)
             if (b == 0) v = ""
             else {
