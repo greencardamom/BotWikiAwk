@@ -21,4 +21,14 @@ Example run a 50k-article bot with three commands:
 	project -c -p accdate20181102.00001-50000
 	runbot accdate20181102.00001-50000 auth
 
+* Install BotWikiAwk library
+
+        cd ~
+        git clone 'https://github.com/greencardamom/BotWikiAwk'
+        export AWKPATH=.:/home/user/BotWikiAwk/lib:/usr/share/awk
+        export PATH=$PATH:/home/user/BotWikiAwk/bin
+        cd ~/BotWikiAwk
+        ./setup.sh
+        read SETUP for further instructions eg. setting up email
+
 [Documentation](https://en.wikipedia.org/wiki/User:GreenC/BotWikiAwk)
