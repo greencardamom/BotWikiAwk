@@ -10,7 +10,7 @@ missing - unless you need it, then install it, and manually add it's location to
 === Email ===
 
 BWA has support for sending email from any computer that has curl installed no other
-dependencies are reqired. You will need an upstream SMTP server such as what an ISP
+dependencies are reqired. You will only need an upstream SMTP server such as what an ISP
 provides for POP3/IMAP email clients.
 
 Email settings are in ~/BotWikiAwk/lib/syscfg.awk see that file for instructions.

@@ -36,8 +36,17 @@ BEGIN {
   # Default email settings - for more info, see function email() in library.awk
 
     #   Exe["email_auth"]:
-    #      This filename contains a single line with the SMTP server authentication credentials. For example:
-    #        smtp://myprovider.net:26/novalidate-cert/user=joe@mydomain.com
+    #      This filename contains a single-line with SMTP server authentication credentials. 
+    #      For normal SMTP:
+    #        smtp://user%40example.com:YOUR_PASSWORD@smtp.example.com:587
+    #      For SMTPS:
+    #        smtps://user%40example.com:YOUR_PASSWORD@smtp.example.com:465
+    #      (Both are modern standards that use encryption. Check with your provider which method they prefer.)
+    #      NOTE: Any special character in the email address or password (eg. "@") need to be URL-encoded
+    #            If it's not a normal letter or number and not (- _ . ~) it should be encoded.
+    #            Try this tool https://urlencoder.org 
+    #      In this example the login is user@example.com, pass is "YOUR_PASSWORD"
+    #        the SMTP server is "smtp.example.com" and port 465 (SMTPS) or 587 (SMTP Submission)
 
   if(_e_(Exe["email_auth"]))
     Exe["email_auth"] = "/path/email_auth.txt"

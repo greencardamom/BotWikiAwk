@@ -85,7 +85,7 @@ function removefile(str,opts) {
     if (str ~ /[*|?]/ || empty(str)) return 0
     close(str)
     if (checkexists(str))
-        sys2var( Exe["rm"] " " opts " -- " shquote(str) )
+        system( Exe["rm"] " " opts " -- " shquote(str) )
     system("") # Flush buffer
     if (checkexists(str)) {
         stdErr("Error: unable to delete " str ", aborting.")
@@ -108,7 +108,7 @@ function removefile2(str) {
         return 0
     system("") # Flush buffer
     if (exists2(str)) {
-      sys2var("rm -r -- " shquote(str) )
+      system("rm -r -- " shquote(str) )
       system("")
       if (! exists2(str))
         return 1
@@ -332,7 +332,7 @@ function mkdir(dir,    var, cwd) {
 
     if (empty(dir)) return 0
     if (checkexists(dir)) return 0
-    sys2var(Exe["mkdir"] " -p " shquote(dir) " 2>/dev/null")
+    system(Exe["mkdir"] " -p " shquote(dir) " 2>/dev/null")
     cwd = ENVIRON["PWD"]
     if (! chDir(dir)) {
         StdErr("Could not create " shquote(dir) " (" ERRNO ")\n")
@@ -524,7 +524,7 @@ function dateeight() {
 function sleep(seconds,opt,   t) {
 
     if (opt == "unix")
-        sys2var("sleep " seconds)
+        system("sleep " seconds)
     else {
       t = systime()
       while (systime() < t + seconds) {}
@@ -637,8 +637,17 @@ function getopt(argc, argv, options,    thisopt, i) {
 #                 Exe["email_auth"] = /path/filename
 #                  
 #   Exe["email_auth"]:
-#      This filename contains a single line with SMTP server authentication credentials. For example:
-#        smtp://myprovider.net:26/novalidate-cert/user=joe@mydomain.com
+#      This filename contains a single-line with SMTP server authentication credentials. 
+#      For normal SMTP:
+#        smtp://user%40example.com:YOUR_PASSWORD@smtp.example.com:587
+#      For SMTPS:
+#        smtps://user%40example.com:YOUR_PASSWORD@smtp.example.com:465
+#      (Both are modern standards that use encryption. Check with your provider which method they prefer.)
+#      NOTE: Any special character in the email address or password (eg. "@") need to be URL-encoded
+#            If it's not a normal letter or number and not (- _ . ~) it should be encoded.
+#            Use the tool https://urlencoder.org 
+#      In this example the login is user@example.com, pass is "YOUR_PASSWORD"
+#        the SMTP server is "smtp.example.com" and port 465 (SMTPS) or 587 (SMTP Submission)
 #
 #   If your application has "@include botwiki" or "@include library" or "@include syscfg" nothing more needs to be done. 
 #      See syscfg.awk for default email settings.
@@ -672,7 +681,8 @@ function email(from, to, subject, body,   outfile,s) {
 
   print "To: " to > outfile
   print "From: " from >> outfile
-  print "Date: " sys2var(Exe["date"] " -R") >> outfile   # Formated in RFC 2922 with -R switch
+  print "Date: " sys2var(Exe["date"] " -R") >> outfile # Formated in RFC 2822 with -R switch
+  print "Content-Type: text/plain;" >> outfile
   print "Subject: " subject >> outfile
   if(!empty(body)) {
     print "" >> outfile
@@ -683,8 +693,8 @@ function email(from, to, subject, body,   outfile,s) {
   emailauth = strip(readfile(Exe["email_auth"]))
 
   # https://superuser.com/questions/1539589/curl-how-do-i-set-the-email-subject-when-using-f-multipart-attachment
-  s = Exe["curl"] " -s " shquote(emailauth) " --mail-from " shquote(from) " --mail-rcpt " shquote(to) " --upload-file " shquote(outfile)
-  sys2var(s)
+  s = Exe["curl"] " -s --url " shquote(emailauth) " --mail-from " shquote(from) " --mail-rcpt " shquote(to) " --upload-file " shquote(outfile)
+  system(s)
   removefile2(outfile)
 
 }
@@ -971,7 +981,7 @@ function regesc3 (str,   safe) {
 # regesc2() - escape regex symbols using backslash \x
 #
 #   Example:
-#      print regesc2("^$(){}[].*+?|\\") produces \^\$\(\)\{\}\[\]\.\*\+\?\|\\
+#	print regesc2("^$(){}[].*+?|\\") produces \^\$\(\)\{\}\[\]\.\*\+\?\|\\
 #
 #  . consider instead using the non-regex subs() and gsubs()
 #
@@ -1343,6 +1353,90 @@ function comparestr(s1,s2,   a1,a2,c1,c2,i) {
 function hidenewline(s) {                  
     gsub(/\n/, "_newline_", s)
     return s             
+}
+
+#
+# titlecase 
+#
+#   "Lord of the Rings" = titlecase("LORD OF THE RINGS")
+#
+# Credit: Google Gemini and GreenC - April 2025
+#
+function titlecase(str,    small_words, parts, i, temp_num_parts, current_part, lower_part, cap_part, output_title, capitalize_next, is_first_word, last_word_index, pattern) {
+
+    # Define the set of words that should generally remain lowercase
+    small_words["a"] = 1; small_words["an"] = 1; small_words["the"] = 1
+    small_words["and"] = 1; small_words["but"] = 1; small_words["or"] = 1
+    small_words["nor"] = 1; small_words["so"] = 1; small_words["yet"] = 1
+    small_words["as"] = 1; small_words["at"] = 1; small_words["by"] = 1
+    small_words["for"] = 1; small_words["in"] = 1; small_words["of"] = 1
+    small_words["off"] = 1; small_words["on"] = 1; small_words["per"] = 1
+    small_words["to"] = 1; small_words["up"] = 1; small_words["via"] = 1
+    small_words["with"] = 1
+
+    # Pattern for patsplit: Match sequences of letters/numbers/apostrophes OR any single character.
+    # This breaks the string down finely, preserving all original characters and spaces.
+    pattern = "[[:alnum:]']+|."
+    temp_num_parts = patsplit(str, parts, pattern)
+
+    output_title = ""
+    capitalize_next = 1  # Capitalize the first word encountered by default
+    is_first_word = 1    # Flag to identify the first actual word component
+    last_word_index = -1 # Store the index of the last word component found
+
+    # Pre-scan to find the index of the last actual word component.
+    # Needed for the rule "always capitalize the last word".
+    for (i = temp_num_parts; i >= 1; i--) {
+        # Check if the part starts with a character typical of a word.
+        if (match(parts[i], /^[[:alnum:]']/)) {
+             last_word_index = i
+             break
+        }
+    }
+
+    # --- Processing Loop ---
+    for (i = 1; i <= temp_num_parts; i++) {
+        current_part = parts[i]
+
+        # Check if it's a word component (starts with letter/number/apostrophe)
+        if (match(current_part, /^[[:alnum:]']/)) {
+            lower_part = tolower(current_part)
+            # Check if this specific part is the last identified word component
+            is_last_word_part = (i == last_word_index)
+
+            # Capitalize if:
+            # 1. It's the first word component encountered (is_first_word flag).
+            # 2. OR capitalize_next flag is set (due to preceding punctuation).
+            # 3. OR It's the last word component in the string.
+            # 4. OR It's not a 'small word'.
+            if (is_first_word || capitalize_next || is_last_word_part || !(lower_part in small_words)) {
+                 # Basic capitalization of the first letter of the component.
+                 # Does not handle "Word-Word" -> "Word-Word" automatically yet. Needs more rules if required.
+                 cap_part = toupper(substr(lower_part, 1, 1)) substr(lower_part, 2)
+            } else {
+                 # It's a 'small word' component, not first, not last, not after triggering punctuation.
+                 cap_part = lower_part
+            }
+            output_title = output_title cap_part # Append processed word part
+
+            # Reset flags after processing a word component
+            capitalize_next = 0
+            is_first_word = 0 # We have processed at least one word part
+        } else {
+            # It's a non-word character (punctuation, space, symbol)
+            output_title = output_title current_part # Append directly, preserving original
+
+            # Check if this character should force capitalization of the *next* word component.
+            # Force caps after :, ;, -, ., !, ?
+            if (match(current_part, /^[:;\-.!?]$/)) {
+                capitalize_next = 1
+            }
+            # Note: Spaces or other symbols do not change the capitalize_next state.
+            #       is_first_word state is only turned off when an actual word part is processed.
+        }
+    }
+
+    return output_title
 }
 
 
