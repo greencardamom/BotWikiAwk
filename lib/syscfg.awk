@@ -26,7 +26,7 @@
 
 BEGIN {
 
-  # Create a default user agent string. It is important or WMF API may block you.
+  # Create a default user agent string. It is important Agent not be blank or WMF API may block the bot.
    # WMF bot policy requires two or three elements:
    #  1. Name of the bot
    #  2. Contact information
@@ -36,7 +36,8 @@ BEGIN {
    #  at the top of your program. Create an "Agent = <agent>" variable at the top of your program file identifying the name
    #  of your program, username, site, library
 
-  Agent = "MyProgram User:MyName MYwiki BotWikiAwk"
+  if(length(Agent) == 0)
+    Agent = "MyHostname User:MyName enwiki BotWikiAwk"
 
   # Default wget options (include lead/trail spaces)
 
