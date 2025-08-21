@@ -49,7 +49,7 @@ BEGIN {
 
   # Optional location of bot configuration vs. in the top BEGIN{} section of the bot
 
-  if(empty(Agent) && empty(Engine)) { 
+  if(empty(Engine)) { 
 
     switch(BotName) {
 

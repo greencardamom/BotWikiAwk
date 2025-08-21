@@ -26,7 +26,7 @@
 
 BEGIN {
 
-  # Create a default user agent string. It is important Agent not be blank or WMF API may block the bot.
+  # Create a default user agent string. It is important the Agent not be blank or WMF API may block the bot.
    # WMF bot policy requires two or three elements:
    #  1. Name of the bot
    #  2. Contact information
@@ -54,15 +54,15 @@ BEGIN {
     #        smtp://user%40example.com:YOUR_PASSWORD@smtp.example.com:587
     #      For SMTPS:
     #        smtps://user%40example.com:YOUR_PASSWORD@smtp.example.com:465
-    #      (Both are modern standards that use encryption. Check with your provider which method they prefer.)
-    #      NOTE: Any special character in the email address or password (eg. "@") need to be URL-encoded
+    #      (Both methods are modern standards that use encryption. Check with your provider which method they prefer.)
+    #      NOTE: Any special character in the email address or password (eg. "@") needs to be URL-encoded
     #            If it's not a normal letter or number and not (- _ . ~) it should be encoded.
-    #            Try this tool https://urlencoder.org 
+    #            Encode with this tool: https://urlencoder.org 
     #      In this example the login is user@example.com, pass is "YOUR_PASSWORD"
     #        the SMTP server is "smtp.example.com" and port 465 (SMTPS) or 587 (SMTP Submission)
 
   if(_e_(Exe["email_auth"]))
-    Exe["email_auth"] = "/path/email_auth.txt"
+    Exe["email_auth"] = "/path/to/email_auth.txt"
 
     # Default From: and To:
 
