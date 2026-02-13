@@ -486,20 +486,24 @@ function http2var(url,tries,  debug,i,op) {
 
      if(debug) stdErr(command)
 
-     for(i = 1; i <= int(tries); i++) {
-       op = sys2var( command )
-       if(!empty(op))
-         return op
-       if(debug) stdErr("http2var retry " i)
-       if(! empty(Exe["sleep"]))
-         sleep(2, "unix")
-       else
-         sleep(2)
+     for (i = 1; i <= int(tries); i++) {
+         op = sys2var(command)
+         if (!empty(op)) 
+             return op
+           
+         # Jittered Backoff: (2^i) + 0-10 seconds of random delay
+         wait = (2 ^ i) + int(rand() * 10)
+         if (wait > 120) 
+             wait = 120
+         
+         if (debug) 
+             stdErr("http2var: Attempt " i "/" tries ". Retrying in " wait "s...")
+ 
+         if (!empty(Exe["sleep"])) 
+             sleep(wait, "unix")
+         else 
+             sleep(wait)
      }
-
-     # Depending on your application, you can add an email() notification when tries reaches the maximum 
-     #  It signifies the remote site is not responding. 
-
 }
 
 # 
@@ -1786,59 +1790,39 @@ function urlElement(url,element,   a,scheme,netloc,tail,b,fragment,query,path,c)
 
 }
 
-
-
 #
 # urldecodeawk - decode a urlencoded string
 # 
 #  Requirement: gawk -b
-#  Credit: Rosetta Stone January 2017.
-#          "literal" added by GreenC 2020
 #              
-function urldecodeawk(str,  safe,len,L,M,R,i,literal,debug) {
-
-    debug = 0
-
+function urldecodeawk(str,    safe, i, L, h, R) {
     safe = str
-    len = length(safe)
-    for (i = 1; i <= len; i++) {
-        literal = 0
-        if ( substr(safe,i,1) == "%") {
-
-                                           # Bug in data, need at least two valid chars after a %, otherwise return as literal % 
-                                           # awk -ilibrary 'BEGIN{print urldecodeawk("test%2")}' => "test%2"
-                                           # awk -ilibrary 'BEGIN{print urldecodeawk("test%#i")}' => "test%#i"
-            if(empty(substr(safe,i+1,1)) || empty(substr(safe,i+2,1)))   
-              literal = 1
-            if(substr(safe,i+1,1) !~ /[0-9a-zA-Z]/ || substr(safe,i+2,1) !~ /[0-9a-zA-Z]/)
-              literal = 1
-
-            L = substr(safe,1,i-1)         # chars to left of "%"
-
-            if(debug) print "L = " L
-
-            if(!literal)
-              M = substr(safe,i+1,2)       # 2 chars to right of "%"
-            else
-              M = ""
-
-            if(debug) print "M = " M
-
-            if(!literal)
-              R = substr(safe,i+3)         # chars to right of "%xx"
-            else {
-              if(len - 1 == i)
-                R = substr(safe, i + 1, 1)
-              else
-                R = ""
+    i = 1
+    
+    while (i <= length(safe)) {
+        # Check for the escape character
+        if (substr(safe, i, 1) == "%") {
+            h = substr(safe, i + 1, 2)
+            
+            # Strict Hex Check: Must be 2 chars and must be 0-9/A-F
+            if (length(h) == 2 && h ~ /^[0-9a-fA-F][0-9a-fA-F]$/) {
+                L = substr(safe, 1, i - 1)
+                R = substr(safe, i + 3)
+                
+                # REBUILD only on SUCCESS
+                safe = L sprintf("%c", hex2dec(h)) R
+                
+                # Move pointer to the next position (i is now the new byte)
+                # We do NOT increment i here, so the loop checks the next char
+                # (which was previously i+3)
+                
+            } else {
+                # LITERAL %: skip this character and move on.
+                i++
             }
-
-            if(debug) print "R = " R
-
-            if(!literal)
-              safe = sprintf("%s%c%s",L,hex2dec(M),R)
-            else
-              safe = sprintf("%s", L) "%" sprintf("%s", R)
+        } else {
+            # NORMAL CHAR
+            i++
         }
     }
     return safe

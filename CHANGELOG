@@ -1,5 +1,6 @@
 # Changes in reverse chronological order
 #
+# 0.63 Feb 13 2026 -  improved http2var() and urldecodeawk(). Improved Agent and Wget_opts
 # 0.62 Aug 16 2025 -  changed how SMTP authentication works. See function email() in library.awk for email cfg instructions
 #                     various other minor fixes
 # 0.61 Jan 16 2024 -  minor fixes

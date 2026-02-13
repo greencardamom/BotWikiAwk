@@ -26,23 +26,24 @@
 
 BEGIN {
 
-  # Create a default user agent string. It is important the Agent not be blank or WMF API may block the bot.
+  # Create a default user agent string. It is important the Agent not be blank or WMF API may block the bot. I
    # WMF bot policy requires two or three elements:
-   #  1. Name of the bot
+   #  1. Name version date of the bot
    #  2. Contact information
-   #  3. Library (optional) eg. PyWikiBot
-   #  An example would be "reftalk User:GreenC at enwiki BotWikiAwk"
+   #     Including a mailto:<email_address> can improve results
+   #  An example would be "reftalk-2.5-2026 (User:GreenC mailto:myemail@example.com)"
    #  The below "Agent" is a site-wide default in case you forget to add a more specific Agent 
    #  at the top of your program. Create an "Agent = <agent>" variable at the top of your program file identifying the name
    #  of your program, username, site, library
 
   if(length(Agent) == 0)
-    Agent = "MyHostname User:MyName enwiki BotWikiAwk"
+    Agent = "MyProgram-version-date (User:MyName mailto:myemail@example.com)"
 
   # Default wget options (include lead/trail spaces)
+  # including a --referer can improve results
 
   if(_e_(Wget_opts))
-    Wget_opts = " --no-cookies --ignore-length --user-agent=\"" Agent "\" --no-check-certificate --tries=5 --timeout=120 --waitretry=60 --retry-connrefused "
+    Wget_opts=" --user-agent=\"" Agent "\" --referer=\"https://en.wikipedia.org/wiki/Main_Page\" --no-cookies --ignore-length --no-check-certificate --tries=3 --timeout=120 --waitretry=60 --retry-connrefused --retry-on-http-error=429 "
 
   # --------------------------------------
 
