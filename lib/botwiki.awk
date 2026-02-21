@@ -663,7 +663,7 @@ function stopbutton(button,bb,  command,butt,i) {
   if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
     StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
 
-  command = "timeout --foreground 20s wget -q -O- " shquote(StopButton "&action=raw")
+  command = "timeout --foreground 20s wget " Wget_opts " -q -O- " shquote(StopButton "&action=raw")
   button = sys2var(command)
 
   if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
