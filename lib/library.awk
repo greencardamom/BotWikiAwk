@@ -27,6 +27,17 @@
 @load "filefuncs"
 @include "syscfg" # Paths to external programs and define static strings
 
+BEGIN {
+    # Initialize native Random Number Generator once per process using a mix of Time and PID.
+    # This completely eliminates parallel process seed collisions.
+    srand(systime() + PROCINFO["pid"])
+    
+    # Generate the starting seed for the Cliff RNG (must be > 0 and < 1)
+    _cliff_seed = rand()
+    if (_cliff_seed == 0) _cliff_seed = 0.1 # Safety catch so log() doesn't fail
+}
+
+
 # [[ __________________________________________________________________________________ ]]
 # [[ __________________ TOC ___________________________________________________________ ]]
 # [[ __________________________________________________________________________________ ]]
@@ -492,7 +503,7 @@ function http2var(url,tries,  debug,i,op) {
              return op
            
          # Jittered Backoff: (2^i) + 0-10 seconds of random delay
-         wait = (2 ^ i) + int(rand() * 10)
+         wait = (2 ^ i) + randomnumber(10)
          if (wait > 120) 
              wait = 120
          
@@ -1644,35 +1655,36 @@ function stripwikilinks(str,  a,b,c,i,ai,out,sep) {
 # [[ __________________________________________________________________________________ ]]
 
 #
-# randomnumber() - return a random number between 1 to max
+# randomnumber() - return a random number between 0 to (max - 1)
 #
 #  . robust awk random number generator works at nano-second speed and parallel simultaneous invocation
-#  . requires global variable _cliff_seed ie:
-#        _cliff_seed = "0.00" splitx(sprintf("%f", systime() * 0.000001), ".", 2)
-#    should be defined one-time only eg. in the BEGIN{} section
+#  . requires the BEGIN block in library.awk to initialize the seeds
 #
-function randomnumber(max, i,randomArr) {
+function randomnumber(max,    i, randomArr) {
 
   # missing _cliff_seed fallback to less-robust rand() method
     if (empty(_cliff_seed)) 
         return randomnumber1(max)
 
-  # create array of 1000 random numbers made by cliff_rand() method seeded by systime()
+  # create array of 1000 random numbers made by cliff_rand() method
     for (i = 0; i <= 1002; i++) 
         randomArr[i] = randomnumber2(max)
 
-  # choose one at random using rand() method seeded by PROCINFO["pid"]
+  # choose one at random using native rand()
     return randomArr[randomnumber1(1000)] 
-
+ 
 }
+
 function randomnumber1(max) {
-    srand(PROCINFO["pid"])
+    # Relies on the global srand() set in the BEGIN block
     return int( rand() * max)
 }
+
 function randomnumber2(max) {
     int( cliff_rand() * max)  # bypass first call
     return int( cliff_rand() * max)
 }
+
 #
 #  cliff_rand()
 #
