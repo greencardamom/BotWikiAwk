@@ -655,20 +655,20 @@ function urlurl(url,  newurl,re,dest) {
 
   gsub(re, "", newurl)    
 
-  if(match(newurl, /[Hh][Tt][Tt][Pp][Ss]?[^$]*[^$]?/, dest)) {
+  if(match(newurl, /[Hh][Tt][Tt][Pp][Ss]?.*$/, dest)) {
     if(dest[0] ~ /^[Hh][Tt][Tt][Pp][Ss]?[%]3[Aa]/) 
       dest[0] = urldecodeawk(dest[0])
     if(iswebcite(url))
-      gsub(/[&]date[=][^$]*[^$]?/, "", dest[0])  # Remove trailing date from query?url=http.. forms
+      gsub(/[&]date[=].*$/, "", dest[0])  # Remove trailing date from query?url=http.. forms
     return dest[0]
   }
 
   else if(iswebcite(url) || isfreezepage(url)) {  # try method 2 for example the URL doesn't start with "http"
-    if(match(newurl, /[Uu][Rr][Ll][=][^$]*[^$]?/, dest)) {
+    if(match(newurl, /[Uu][Rr][Ll][=].*$/, dest)) {
       gsub(/[Uu][Rr][Ll][=]/, "", dest[0])
       if(dest[0] ~ /^[Hh][Tt][Tt][Pp][Ss]?[%]3[Aa]/)
         dest[0] = urldecodeawk(dest[0])
-      gsub(/[&]date[=][^$]*[^$]?/, "", dest[0])  # Remove trailing date from query?url=http.. forms
+      gsub(/[&]date[=].*$/, "", dest[0])  # Remove trailing date from query?url=http.. forms
       return dest[0]
     }
   }
@@ -752,9 +752,9 @@ function urlequal(urlsource,wurlsource,  dest1,dest2,debug) {
         wurlsource = urldecodeawk(wurlsource)
 
        # get rid of fragments..
-        if(match(urlsource, /[#][^$]*[^$]?/, dest1))
+        if(match(urlsource, /[#].*$/, dest1))
           urlsource = subs(dest1[0], "", urlsource)
-        if(match(wurlsource, /[#][^$]*[^$]?/, dest2))
+        if(match(wurlsource, /[#].*$/, dest2))
           wurlsource = subs(dest2[0], "", wurlsource)
         
        # remove trailing garbage
@@ -785,7 +785,7 @@ function urlequal(urlsource,wurlsource,  dest1,dest2,debug) {
           sub(/^ftp/, "http", wurlsource)
 
        # Check if query ? portion is the same even if arguments are in different order
-        if(match(urlsource, /[?][^$]*[^$]?/, dest1) && match(wurlsource, /[?][^$]*[^$]?/, dest2) ) {
+        if(match(urlsource, /[?].*$/, dest1) && match(wurlsource, /[?].*$/, dest2) ) {
           if(dest1[0] != dest2[0]) {
             if( sortstring(dest1[0], "@ind_str_asc") == sortstring(dest2[0], "@ind_str_asc") ) {
               urlsource  = subs(dest1[0], "", urlsource)
