@@ -8,7 +8,7 @@
 #   Copyright MIT license
 #   Copyright (c) 2007-2011 Aleksey Cheusov <vle@gmx.net>
 #   Copyright (c) 2012 Jim Pryor <dubiousjim@gmail.com>
-#   Copyright (c) 2018-2024 GreenC (User:GreenC at en.wikipedia.org)
+#   Copyright (c) 2018-2026 GreenC (User:GreenC at en.wikipedia.org)
 #
 
 #
@@ -140,13 +140,22 @@ function parse_json(str, T, V,  slack,    c,s,n,a,A,b,B,C,U,W,i,j,k,u,v,w,root) 
                     if (u == "") {
                        if (++k % 2 == 1) v = v "\\"
                     } else {
-                        w = substr(u, 1, 1)  
-                        if (w == "b") v = v "\b" substr(u, 2)
-                        else if (w == "f") v = v "\f" substr(u, 2)
-                        else if (w == "n") v = v "\n" substr(u, 2)
-                        else if (w == "r") v = v "\r" substr(u, 2)
-                        else if (w == "t") v = v "\t" substr(u, 2)
-                        else v = v u
+                        # If k is odd, the preceding backslash was consumed as part of a 
+                        # literal pair (\\). It is inactive. Append text literally.
+                        if (k % 2 == 1) {
+                            v = v u
+                        } else {
+                            # The backslash is active. Evaluate the escape sequence.
+                            w = substr(u, 1, 1)  
+                            if (w == "b") v = v "\b" substr(u, 2)
+                            else if (w == "f") v = v "\f" substr(u, 2)
+                            else if (w == "n") v = v "\n" substr(u, 2)
+                            else if (w == "r") v = v "\r" substr(u, 2)
+                            else if (w == "t") v = v "\t" substr(u, 2)
+                            else v = v u
+                        }
+                        # Reset consecutive backslash counter
+                        k = 0
                     }
                 }
             }
