@@ -29,7 +29,7 @@ function awkenough_die(msg) {
 }
 
 function awkenough_assert(test, msg) {
-    if (!test) awenough_die(msg ? msg : "assertion failed")
+    if (!test) awkenough_die(msg ? msg : "assertion failed")
 }
 
 # unitialized scalar
