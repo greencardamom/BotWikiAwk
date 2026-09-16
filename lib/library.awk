@@ -1009,7 +1009,7 @@ function regesc2(str,   safe) {
 #
 # reverse() - reverse a string
 #                  
-function reverse(s,  a,i,n) {             
+function reverse(s,  a,i,n, c) {             
 
     c = split(s, a, "")
     for(i = c; i >= 1; i--)

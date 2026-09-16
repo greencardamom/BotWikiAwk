@@ -127,7 +127,7 @@ function readprojectcfg(  a,b,c,i,p) {
 #      setProject(id)
 #      print Project["meta"] Project["data"] Project["id"]
 #
-function setProject(pid) {
+function setProject(pid,   o, oo) {
 
         delete Project  # Global array
 
@@ -342,7 +342,7 @@ function whatistempid(name,indexfile,   i,a,b) {
 #   . Exe["bell"] defined using full path/filenames to play a sound
 #     eg. Exe["bell"] = "/usr/bin/play -q /home/adminuser/scripts/chord.wav"
 #
-function bell(  a,i,ok) {
+function bell(  a,i,ok, c) {
 
   c = split(Exe["bell"], a, " ")
 
