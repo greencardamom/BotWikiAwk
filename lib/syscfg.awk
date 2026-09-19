@@ -169,12 +169,25 @@ BEGIN {
   # --------------------------------------
 
   # Bot executables global
+  #
+  # GUARDED like the Unix tools above: set the default ONLY if the calling program has not
+  # already assigned one before `@include "library.awk"`. Without the guard these five
+  # assignments silently overwrite a caller's override, because syscfg's BEGIN runs AFTER the
+  # caller's first BEGIN. That bit us 2026-09-18: noisbn's driver.awk set an absolute
+  # Exe["wikiget"], this block reset it to the PATH-relative "wikiget.awk", PATH resolved to
+  # BotWikiAwk's own unconfigured bin/wikiget.awk, and the run silently produced 0 articles.
+  # Programs that do NOT pre-assign are unaffected - they still get these defaults.
 
-  Exe["bug"] = "bug.awk"
-  Exe["project"] = "project.awk"
-  Exe["driver"] = "driver.awk"
-  Exe["wikiget"] = "wikiget.awk"
-  Exe["auniq"] = "auniq"
+  if(_e_(Exe["bug"]))
+    Exe["bug"] = "bug.awk"
+  if(_e_(Exe["project"]))
+    Exe["project"] = "project.awk"
+  if(_e_(Exe["driver"]))
+    Exe["driver"] = "driver.awk"
+  if(_e_(Exe["wikiget"]))
+    Exe["wikiget"] = "wikiget.awk"
+  if(_e_(Exe["auniq"]))
+    Exe["auniq"] = "auniq"
 
 }
 
