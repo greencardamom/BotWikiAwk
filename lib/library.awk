@@ -478,7 +478,7 @@ function sys2varStderr(command        ,fish,scale,ship,c,a) {
 #   Requirement: Exe["wget"]
 #   Requirement: Exe["timeout"]
 #
-function http2var(url,tries,  debug,i,op) {
+function http2var(url,tries,  debug,i,op,wait) {
 
      debug = 0
 
@@ -515,6 +515,58 @@ function http2var(url,tries,  debug,i,op) {
          else 
              sleep(wait)
      }
+}
+
+#
+# http2varPOST() - Force a POST request using wget --post-file
+#
+#   Example arguments:
+#     baseurl: "https://uk.wikipedia.org/w/api.php"
+#     query:   "action=query&prop=revisions&titles=..." (already url-encoded)
+#
+function http2varPOST(baseurl, query, tries,    debug, i, op, wait, command, tmpfile) {
+
+     debug = 0
+     if (!checkexe(Exe["wget"], "wget") || !checkexe(Exe["timeout"], "timeout"))
+        return
+
+     if (empty(tries))
+        tries = 20
+
+     # Create the temporary file to hold the POST body (the query parameters)
+     tmpfile = mktemp("/tmp/http2var_post.XXXXXX", "u")
+     printf("%s", query) > tmpfile
+     close(tmpfile)
+
+     # Construct the command. We use --post-file to send the query string.
+     command = Exe["timeout"] " 20m " Exe["wget"] " " Wget_opts " -q -O- --post-file=" shquote(tmpfile) " " shquote(baseurl)
+
+     if (debug) stdErr("http2varPOST: " command " (POST Body Length: " length(query) ")")
+
+     for (i = 1; i <= int(tries); i++) {
+        op = sys2var(command)
+        
+        if (!empty(op)) {
+            if (!empty(tmpfile))
+                removefile2(tmpfile)
+            return op
+        }
+
+        # Jittered Backoff
+        wait = (2 ^ i) + int(rand() * 10)
+        if (wait > 120) wait = 120
+         
+        if (debug) 
+            stdErr("http2varPOST: Attempt " i "/" tries ". Retrying in " wait "s...")
+
+        if (!empty(Exe["sleep"])) 
+            sleep(wait, "unix") 
+        else 
+            sleep(wait) 
+     }
+
+     if (!empty(tmpfile))
+       removefile2(tmpfile)
 }
 
 # 
@@ -677,7 +729,7 @@ function getopt(argc, argv, options,    thisopt, i) {
 #
 #      email("payables@mydomain.com", "office@example.com", "Payment due", "This is the body")
 #
-function email(from, to, subject, body,   outfile,s) {
+function email(from, to, subject, body,   outfile,s,emailauth) {
 
   if(empty(from) || empty(to) ) {
     stdErr("email() in library.awk has empty From:, or To:, or Subject:")
@@ -867,7 +919,7 @@ function clean(str,  safe) {
 # convertxml() - convert XML to plain
 #  . option - convertxml(s,"all") will also do additional characters 
 #
-function convertxml(str,flag,   safe) {
+function convertxml(str,flag,   safe,ic) {
 
     safe = str
     gsub(/&lt;/,"<",safe)

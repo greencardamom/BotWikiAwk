@@ -485,7 +485,7 @@ function deflateUniversal(article,   c,i,field,sep,inner,inner2,r,k,open,open2,e
 #     So if there were 5 {{!}} they would be coded DefOrdGenAa2.1z -> DefOrdGenAa2.5z .. the "z" helps since 2.1 and 2.11
 #     are ambiguous in the wikisource (is the trailing "1" part of the source or code?). The "z" is an end-of-string marker.
 
-function deflate(article,opt,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTemplate,ReEmbedded,ti) {
+function deflate(article,opt,   c,i,field,sep,inner,re,loopy,j,codename,ReSpace,ReTemplate,ReEmbedded,ti,listre,dest) {
 
   ti = IGNORECASE
   IGNORECASE = 1 
