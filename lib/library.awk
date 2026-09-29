@@ -760,8 +760,15 @@ function email(from, to, subject, body,   outfile,s,emailauth) {
   emailauth = strip(readfile(Exe["email_auth"]))
 
   # https://superuser.com/questions/1539589/curl-how-do-i-set-the-email-subject-when-using-f-multipart-attachment
-  s = Exe["curl"] " -s --url " shquote(emailauth) " --mail-from " shquote(from) " --mail-rcpt " shquote(to) " --upload-file " shquote(outfile)
-  system(s)
+  # The SMTP URL carries the password, so it goes to curl on stdin (-K -), never on its command line where ps would show it
+  if (emailauth ~ /["\\]/) {
+    stdErr("email() in library.awk: the email_auth URL contains a quote or backslash - URL-encode it")
+    removefile2(outfile)
+    return 0
+  }
+  s = Exe["curl"] " -s -K - --mail-from " shquote(from) " --mail-rcpt " shquote(to) " --upload-file " shquote(outfile)
+  printf("url = \"%s\"\n", emailauth) | s
+  close(s)
   removefile2(outfile)
 
 }
