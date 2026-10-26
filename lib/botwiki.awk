@@ -28,44 +28,44 @@
 
 BEGIN {
 
-  # Stop button page - your stop button page. Change to blank string if not using a stop button.
-  # This is a global default. You can override it for certain bots by adding StopButton to the bot's
-  # "Code block" below, see the example.
+  # Your settings go in the local settings file, not here - see the top of syscfg.awk. Keys used here:
+  #
+  #   StopButton  https://en.wikipedia.org/wiki/User:name/button  - stop button page. "none" or no key = none
+  #   UserPage    https://en.wikipedia.org/wiki/User:name
+  #   UserEmail   me@example.com                                  - notified when the stop button halts a bot.
+  #                                                                 Default: Exe["to_email"] (syscfg.awk)
+  #   bot.<BotName>.home   /home/me/bots/mybot/                   - Home of one bot
+  #   bot.<BotName>.agent  MyBot/1.0 (User:name)                  - Agent of one bot (%u, %s as below)
+  #   bot.default.home     /home/me/bots/%s/                      - Home of any other bot (%s = BotName)
+  #   bot.default.agent    %u (ask me about %s)                   - Agent of any other bot (%u = UserPage)
+  #
+  # A bot can instead set Engine, Home and Agent at the top of its own BEGIN{} section, and then none
+  # of the bot.* keys are used.
 
-  # StopButton = ""
-  StopButton = "https://en.wikipedia.org/wiki/User:name/button"
+  if(empty(UserEmail)) {
+    if(!empty(Exe["to_email"]))
+      UserEmail = Exe["to_email"]
+    else
+      UserEmail = "sample@example.com"
+  }
 
-  # Your user page
+  if(empty(Engine)) {
 
-  UserPage = "https://en.wikipedia.org/wiki/User:name"
+    if(!empty(BotWikiCfg["bot." BotName ".home"]))
+      Home = BotWikiCfg["bot." BotName ".home"]
+    else if(!empty(BotWikiCfg["bot.default.home"]))
+      Home = gsubs("%s", BotName, BotWikiCfg["bot.default.home"])
+    else
+      Home = "/home/adminuser/bots/" BotName "/"
 
-  # Your email address (for notifying when stop button is pressed when running from cron etc)
-  # Use the default Exe["to_email"] defined in syscfg.awk - or set a different one here
+    if(!empty(BotWikiCfg["bot." BotName ".agent"]))
+      Agent = gsubs("%u", UserPage, gsubs("%s", BotName, BotWikiCfg["bot." BotName ".agent"]))
+    else if(!empty(BotWikiCfg["bot.default.agent"]))
+      Agent = gsubs("%u", UserPage, gsubs("%s", BotName, BotWikiCfg["bot.default.agent"]))
+    else
+      Agent = UserPage " (ask me about " BotName ")"
 
-  if(!empty(Exe["to_email"]))
-    UserEmail = Exe["to_email"]
-  else
-    UserEmail = "sample@example.com"
-
-  # Optional location of bot configuration vs. in the top BEGIN{} section of the bot
-
-  if(empty(Engine)) { 
-
-    switch(BotName) {
-
-      case "mybot":                                             # Custom bot paths  
-        Home = "/home/adminuser/bots/" BotName "/"  
-        Agent = UserPage " (ask me about " BotName ")"
-        Engine = 0
-        break
-
-      default:                                                  # Default both paths
-        Home = "/home/adminuser/bots/" BotName "/"  
-        Agent = UserPage " (ask me about " BotName ")"
-        Engine = 0
-        break
-    }  
-
+    Engine = 0
   }
 
   # Bot executable 
@@ -76,7 +76,7 @@ BEGIN {
   
   if(BotName != "makebot") {
     if(! checkexists(Home)) {
-      stdErr("No known bot '" BotName "'. Run botwikiawk commands while in the home directory of the bot.")
+      stdErr("No known bot '" BotName "'. Run botwikiawk commands while in the home directory of the bot (" Home ")")
       exit
     } 
     if(Engine != 3) {
@@ -90,7 +90,11 @@ BEGIN {
 #
 # readprojectcfg - read project.cfg into Config[]
 #
-function readprojectcfg(  a,b,c,i,p) {
+#  . hook: if the calling program defines readprojectcfgLocal(), it is called after project.cfg is read
+#    and may load further config of its own. A non-zero return means it found some, so a missing
+#    project.cfg is then not an error
+#
+function readprojectcfg(  a,b,c,i,p,fn,local) {
 
   if(checkexists(Home "project.cfg", "botwiki.awk")) {
     for(i = 1; i <= splitn(Home "project.cfg", a, i); i++) {
@@ -113,8 +117,13 @@ function readprojectcfg(  a,b,c,i,p) {
     }
   }
 
-  if(length(Config) == 0) {
-    stdErr("botwiki.awk readprojectcfg(): Unable to find project.cfg")
+  if("readprojectcfgLocal" in FUNCTAB) {
+    fn = "readprojectcfgLocal"
+    local = @fn()
+  }
+
+  if(length(Config) == 0 && ! local) {
+    stdErr("botwiki.awk readprojectcfg(): Unable to find project.cfg for BotName " BotName)
     exit
   }
 
@@ -127,9 +136,17 @@ function readprojectcfg(  a,b,c,i,p) {
 #      setProject(id)
 #      print Project["meta"] Project["data"] Project["id"]
 #
-function setProject(pid,   o, oo) {
+#   . hooks: if the calling program defines setProjectPre(pid) it is called before Project[] is built
+#     (eg. to adjust Config[]), and setProjectPost(pid) after, to add its own Project[] entries
+#
+function setProject(pid,   o, oo, fn) {
 
         delete Project  # Global array
+
+        if("setProjectPre" in FUNCTAB) {
+          fn = "setProjectPre"
+          @fn(pid)
+        }
 
         if(pid ~ /error/) {
           stdErr("Unknown project id. Using default in project.cfg")
@@ -163,6 +180,11 @@ function setProject(pid,   o, oo) {
         Project["discovereddone"] = Project["meta"] "discovered.done"          # Articles successfully uploaded to Wikipedia
         Project["discoverederror"] = Project["meta"] "discovered.error"        # Articles generated error during upload
         Project["discoverednochange"] = Project["meta"] "discovered.nochange"  # Articles with no change during upload
+
+        if("setProjectPost" in FUNCTAB) {
+          fn = "setProjectPost"
+          @fn(pid)
+        }
 }
 
 #
@@ -194,6 +216,9 @@ function verifyval(val) {
 #   . if flag="space" use space as separator 
 #
 function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
+
+  if(empty(database))
+    return
 
   safed = database
   safen = name
@@ -227,7 +252,7 @@ function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
 #
 # . Returns a proto-tuple see tup() in library.awk 
 #
-function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,command,urlencoded,r,redirurl) {
+function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,command,urlencoded,r,redirurl,redirect) {
 
   if(redir !~ /follow|dontfollow/)
     redir = "dontfollow"
@@ -247,7 +272,7 @@ function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,comma
     command = "https://" hostname "." domain "/w/index.php?title=" urlencoded "&action=raw&oldid=" revid
 
   f = http2var(command)
-  if(length(f) < 5 && empty(revid)) {                                    # Bug in ?action=raw - sometimes it returns a blank page
+  if(length(f) < 150 && empty(revid)) {                                    # Bug in ?action=raw - sometimes it returns a blank page
     command = "https://" hostname "." domain "/wiki/Special:Export/" urlencoded
 
     f = http2var(command)
@@ -258,18 +283,35 @@ function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,comma
   }
 
   if(tolower(f) ~ /[#][ ]{0,}redirect[ ]{0,}[[]/) {
-    print "Found a redirect:"
-    match(f, /[#][ ]{0,}[Rr][Ee][^]]*[]]/, r)
-    print r[0]
-    if(redir ~ /dontfollow/) {
-      # print namewiki " : " r[0] >> "redirects"
-      return "REDIRECT" SUBSEP r[0]
-    }
-    gsub(/[#][ ]{0,}[Rr][Ee][Dd][Ii][^[]*[[]/,"",r[0])
-    redirurl = strip(substr(r[0], 2, length(r[0]) - 2))
 
-    command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirurl) "&action=raw"
-    f = http2var(command)
+    print "\nFound a redirect for: " namewiki
+
+    # Wiki might return different types of redirect syntax
+
+    if(match(f, /<redirect[ _]title="[^"]*[^"]*/, r) > 0) {                        # <redirect title="Ñancahuazú Guerrilla" />
+      print r[0] "\""
+      sub(/<[ ]*redirect[ _]title[ ]*=[ ]*"/, "", r[0])
+      redirect = convertxml(strip(r[0]))
+      if(redir ~ /dontfollow/)
+        return "REDIRECT" SUBSEP "#REDIRECT [[" redirect "]"
+      command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirect) "&action=raw"
+      f = http2var(command)
+    }
+    else if(match(f, /[#][ ]{0,}[Rr][Ee][^]]*[]]/, r) > 0) {                       # #REDIRECT[[pagename#section]]
+      gsub(/([#][ ]{0,}[Rr][Ee][Dd][Ii][Rr][Ee][Cc][Tt][ ]*[[]{2}[ ]*|[]]$)/, "", r[0])
+      sub(/[#].*$/, "", r[0])     # remove section link eg. [[Tokoyo#South]]
+      redirect = convertxml(strip(r[0]))
+      if(redir ~ /dontfollow/)
+        return "REDIRECT" SUBSEP "#REDIRECT [[" redirect "]"
+      command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirect) "&action=raw"
+      f = http2var(command)
+    }
+    else {
+      print "Unable to determine redirect target"
+      if(redir ~ /dontfollow/)
+        return "REDIRECT" SUBSEP "BOTWIKIAWK ERROR NO REDIRECT TARGET"
+    }
+
   }
   return strip(f) SUBSEP ""
 
@@ -321,8 +363,12 @@ function validate_datestamp(stamp,   vyear, vmonth, vday, vhour, vmin, vsec) {
 function whatistempid(name,indexfile,   i,a,b) {
 
   if(empty(INDEXC)) {
-    if(empty(indexfile))
-      indexfile = Project["index"]
+    if(empty(indexfile)) {
+      if(checkexists(Project["indextemp"]))
+        indexfile = Project["indextemp"]
+      else
+        indexfile = Project["index"]
+    }
     if(! checkexists(indexfile) ) {
       stdErr("botwiki.awk (whatistempid): Error unable to find " shquote(indexfile) " for " name )
       return
@@ -653,10 +699,12 @@ function isembedded(tl) {
 #
 #  . return RUN or STOP
 #  . stop button page URL defined globally as 'StopButton' in botwiki.awk BEGIN{} section
+#  . if the page comes back blank it is retried 4 more times, sleeping between tries. The sleeps
+#    default to "2 20 60 240" seconds; a program can set the global 'StopButtonWaits' to 4 other values
 #
 function stopbutton(button,bb,  command,butt,i) {
 
-  if(empty(StopButton)) return "RUN" # stop button disabled
+  if(empty(StopButton) || StopButton == "none") return "RUN" # stop button disabled
 
  # convert https://en.wikipedia.org/wiki/User:GreenC_bot/button
  #         https://en.wikipedia.org/w/index.php?title=User:GreenC_bot/button
@@ -669,11 +717,12 @@ function stopbutton(button,bb,  command,butt,i) {
   if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
     return "RUN"      
 
-  butt[2] = 2; butt[3] = 20; butt[4] = 60; butt[5] = 240
+  if(split(StopButtonWaits, butt) != 4)
+    split("2 20 60 240", butt)
   for(i = 2; i <= 5; i++) {
     if(length(button) < 2) {           
       stdErr("Button try " i " - ", "n")
-      sleep(butt[i], "unix")
+      sleep(butt[i - 1], "unix")
       button = sys2var(command)          
     }  
     else break       
@@ -709,6 +758,10 @@ function stopbutton(button,bb,  command,butt,i) {
 #
 # Return 0 if page was not modified for any reason. Return 1 if page was modified.
 #
+#   . optional globals, set by the calling program (default off):
+#       BotUser = "Example bot" - the bot's wiki account name; a {{bots|deny=}} that names it is also obeyed
+#       DiscoveredTimestamp = 1 - log a date-time with each name written to the "discovered" log
+#
 function upload(wikisource, wikiname, summary, logdir, botname, lang, project,    name,command,result,debug,article,i,re,dest,tries,retval) {
 
     debug = 0  # 0 = off, 1 = list discoveries don't upload, 2 = print stderr msgs
@@ -717,6 +770,8 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang, project,  
 
     if(empty(project))
       project = "wikipedia"
+    if(empty(lang))
+      lang = "en"
 
     if(debug == 1) {
       stdErr("Found " name)
@@ -726,25 +781,26 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang, project,  
 
     # {{bots|deny=<botlist>}}
     if(match(wikisource, /[{][{][ ]*[Bb]ots[ \t]*[\n]?[ \t]*[|][^}]*[}]/, dest)) {
-      re = regesc3(botname) "bot"
-      if(dest[0] ~ re) {
+      re = regesc3(botname) "(bot)?"
+      if(dest[0] ~ re || (!empty(BotUser) && dest[0] ~ regesc3(BotUser))) {
         print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Error: Bot deny" >> logdir "error"
         return 0
       }
     }
 
-    if(debug == 2) printf("  startbutton - ")
+    if(debug == 2) stdErr("  startbutton - ")
     if(stopbutton() != "RUN") {
       print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") " ---- Stop Button" >> logdir "error"
       if(!empty(UserEmail) && !empty(Exe["mailx"]))
         sys2var(Exe["mailx"] " -s \"NOTICE: " botname " bot halted by stop button.\" " UserEmail " < /dev/null")
       return 0
     }
-    if(debug == 2) print "endbutton"
+    if(debug == 2) stdErr("endbutton")
 
     article = logdir "article"
     print wikisource > article
     close(article)
+    if(debug == 2) stdErr(readfile(article))
 
     if(!empty(name)) {
 
@@ -757,7 +813,10 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang, project,  
 
         if(result ~ /[Ss]uccess/) {
           if(debug == 2) stdErr(botname ".awk: wikiget status: Successful. Page uploaded to Wikipedia. " name)
-          print name >> logdir "discovered"
+          if(!DiscoveredTimestamp)
+            print name >> logdir "discovered"
+          else
+            print name " ---- " sys2var(Exe["date"] " +\"%Y%m%d-%H:%M:%S\"") >> logdir "discovered"
           close(logdir "discovered")
           retval = 1
           break
@@ -777,7 +836,7 @@ function upload(wikisource, wikiname, summary, logdir, botname, lang, project,  
           break
         }
 
-        if(debug == 2) printf("Try " i ": " name " - ")
+        if(debug == 2) stdErr("Try " i ": " name " - ")
         sleep(2)
       }
     }

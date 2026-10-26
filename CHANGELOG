@@ -1,5 +1,36 @@
 # Changes in reverse chronological order
 #
+# 0.64 Oct 25 2026 -  settings moved out of lib/ into ~/.config/botwikiawk/settings (or the file named by the environment
+#                       variable BOTWIKIAWK_SETTINGS). The files in lib/ are no longer edited, by you or by setup.sh, so
+#                       BotWikiAwk can be updated with git pull without losing anything. See SETUP and the top of lib/syscfg.awk.
+#                       This is a breaking change for existing users:
+#                         . if you edited lib/syscfg.awk or lib/botwiki.awk, git pull will refuse to overwrite them. Note your
+#                           values, run "git checkout lib/syscfg.awk lib/botwiki.awk", pull, and put them in the settings file:
+#                             Exe["wget"] = "/usr/bin/wget"            -->  Exe.wget  /usr/bin/wget
+#                             Agent = "..." / StopButton = "..."       -->  Agent ...  /  StopButton ...
+#                             case "mybot": Home = "/x/" ... in botwiki -->  bot.mybot.home  /x/   (and bot.mybot.agent)
+#                         . or run ./setup.sh again - it creates the settings file with the Exe[] paths it finds, and
+#                           adds only keys that are missing, so it is safe to re-run
+#                         . a stop button is now off unless StopButton is set. A bot that set StopButton = "" to skip the
+#                           global one should now set StopButton = "none"
+#                       a value can be read from a file with file:/path, eg. "Exe.to_email file:/home/me/.secrets/to.email",
+#                         so the settings file need hold no email address
+#                       new lib/local.awk for your own functions, loaded by syscfg.awk into every program. It ships empty
+#                         and BotWikiAwk never changes it, so git pull leaves your copy alone. If you added functions to
+#                         lib/syscfg.awk (or another lib/ file), move them there
+#                       lib/syscfg.awk works without setup.sh: defaults are command names found on PATH. Optional tools
+#                         (mailx, parallel, lynx, wdiff) default to "" = not installed
+#                     botwiki.awk: hooks so a program can extend it without editing it - readprojectcfgLocal(),
+#                       setProjectPre(pid) and setProjectPost(pid) are called if the program defines them
+#                     http2var(): a URL over 4000 chars is passed to wget in a file. Optional Http2varFast (no wget retries,
+#                       2m cap per try) and Http2var404 (give up on a 404)
+#                     getwikisource(): handles the <redirect title=".."> form, strips #section from the target, and reports
+#                       a redirect with no target. A page under 150 chars is fetched again via Special:Export
+#                     upload(): optional BotUser (the bot's account name, obeyed in {{bots|deny=}}) and DiscoveredTimestamp.
+#                       lang defaults to "en". Debug output goes to stderr
+#                     stopbutton(): retry waits can be set with StopButtonWaits
+#                     sendlog() ignores an empty log name; whatistempid() uses Project["indextemp"] if it exists
+#                     mkdir(): a failure is reported instead of stopping the program (it called StdErr(), which doesn't exist)
 # 0.63 Feb 13 2026 -  improved http2var() and urldecodeawk(). Improved Agent and Wget_opts
 # 0.62 Aug 16 2025 -  changed how SMTP authentication works. See function email() in library.awk for email cfg instructions
 #                     various other minor fixes

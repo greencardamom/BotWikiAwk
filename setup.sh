@@ -129,14 +129,32 @@ fi
       stdErr("setup.sh: Unable to download wikiget.awk from GitHub. Install manually in ~/bin")
   }
 
-  botwikifile = "lib/botwiki.awk"
-  syscfgfile = "lib/syscfg.awk"
+  # Local settings file (see the top of lib/syscfg.awk). Only keys it does not already have are added,
+  # so a re-run never changes a setting made by hand. The files in lib/ are not modified.
+  settingsfile = ENVIRON["BOTWIKIAWK_SETTINGS"]
+  if(empty(settingsfile))
+    settingsfile = ENVIRON["HOME"] "/.config/botwikiawk/settings"
+  if(checkexists(settingsfile)) {
+    c = split(readfile(settingsfile), sa, "\n")
+    for(j = 1; j <= c; j++) {
+      if(sa[j] !~ /^[ \t]*(#|$)/) {
+        split(strip(sa[j]), sb, /[ \t]+/)
+        Have[sb[1]] = 1
+      }
+    }
+  }
+  else {
+    sys2var("mkdir -p \"$(dirname \"" settingsfile "\")\"")
+    print "# BotWikiAwk settings for this machine - see the top of lib/syscfg.awk. One \"key value\" per line." > settingsfile
+    close(settingsfile)
+  }
+  stdErr("\nSettings file: " settingsfile)
 
-  # set default path
-  fp = readfile(botwikifile)
-  if(sub(/Home[ ]*[=][ ]*"\/home\/adminuser\/BotWikiAwk\/bots\//, "Home = \"" inenv["awkpath"] "bots/", fp)) {
-    print fp > botwikifile
-    close(botwikifile)
+  # default location of bots
+  if(!("bot.default.home" in Have)) {
+    print "bot.default.home  " inenv["awkpath"] "bots/%s/" >> settingsfile
+    close(settingsfile)
+    stdErr("  Adding bot.default.home " inenv["awkpath"] "bots/%s/")
   }
 
   manfp = readfile("manifest")
@@ -150,28 +168,22 @@ fi
 
    # set Exe[] paths
     if(a[i] ~ /^dependencies/) {
-      fp = readfile(syscfgfile)
-      if(fp !~ /\][ ]*[=][ ]*[.]{3,}/) 
-        continue
       stdErr("\nSet Exe[] paths")
       c = split(splitx(a[i], "[=]", 2), b, " ")
-      for(j = 1; j <= c; j++) {  
+      for(j = 1; j <= c; j++) {
         b[j] = strip(b[j])
+        if(("Exe." b[j]) in Have)
+          continue
         p = strip(sys2var(sprintf("command -v %s",b[j])))
-        re = "Exe\\[\"" b[j] "\"\\][ ]*[=][ ]*[.]{3,}"
-        if(! p) {
-          stdErr("  . Warning: Unable to find path for Exe[\"" b[j] "\"] in " syscfgfile " - please add it manually")
-          sub(re, "Exe[\"" b[j] "\"] = \"\"", fp)  
-        }
+        if(! p)
+          stdErr("  . Warning: Unable to find path for " b[j] " - add \"Exe." b[j] " /path/to/" b[j] "\" to " settingsfile)
         else {
-          if(sub(re, "Exe[\"" b[j] "\"] = \"" p "\"", fp)) {
-            stdErr("  Adding Exe[\"" b[j] "\"] = \"" p "\"")
-            Exe[b[j]] = p
-          }
+          print "Exe." b[j] "  " p >> settingsfile
+          stdErr("  Adding Exe." b[j] " " p)
+          Exe[b[j]] = p
         }
       }
-      print fp > syscfgfile
-      close(syscfgfile)
+      close(settingsfile)
     }
 
    # set shebangs and create symlinks

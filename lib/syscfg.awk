@@ -24,7 +24,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+@include "local.awk"   # your own functions - see lib/local.awk
+
 BEGIN {
+
+  # Local settings. This file holds the BotWikiAwk defaults and is the same for every install; the settings
+  # for this machine and user live outside the repo in ~/.config/botwikiawk/settings (or the file named by
+  # the environment variable BOTWIKIAWK_SETTINGS). setup.sh creates it and adds the Exe[] paths it finds.
+  # One "key value" per line, # for comments:
+  #
+  #   Exe.wget       /usr/bin/wget            - Exe["wget"]
+  #   Agent          MyBot/1.0 (User:MyName; me@example.com)
+  #   StopButton     https://en.wikipedia.org/wiki/User:MyName/button
+  #   bot.mybot.home /home/me/bots/mybot/     - Home for BotName "mybot" (see botwiki.awk)
+  #   Exe.to_email   file:/home/me/.secrets/to.email   - the value is the first line of that file
+  #
+  # Use file: for anything private, eg. email addresses, so the settings file itself holds none.
+  # A key naming a global of the framework (Agent, Wget_opts, StopButton, UserPage, UserEmail, BotUser ..)
+  # sets that global. Any other key is kept in BotWikiCfg[key]. A value the program has already set is not
+  # changed, and the defaults below only fill what is still empty.
+
+  _syscfg_load(_e_(ENVIRON["BOTWIKIAWK_SETTINGS"]) ? ENVIRON["HOME"] "/.config/botwikiawk/settings" : ENVIRON["BOTWIKIAWK_SETTINGS"])
 
   # Create a default user agent string. It is important the Agent not be blank or WMF API may block the bot. I
    # WMF bot policy requires two or three elements:
@@ -74,72 +94,73 @@ BEGIN {
 
   # --------------------------------------
 
-  # Unix tools
+  # Unix tools. Optional ones (mailx, parallel, lynx, wdiff) default to "" = not installed; setup.sh adds
+  # the path of each one it finds to the settings file
 
   if(_e_(Exe["awk"]))
-    Exe["awk"] = ...
+    Exe["awk"] = "awk"
   if(_e_(Exe["cat"]))
-    Exe["cat"] = ...
+    Exe["cat"] = "cat"
   if(_e_(Exe["chmod"]))
-    Exe["chmod"] = ...
+    Exe["chmod"] = "chmod"
   if(_e_(Exe["comm"]))
-    Exe["comm"] = ...
+    Exe["comm"] = "comm"
   if(_e_(Exe["cp"]))
-    Exe["cp"] = ...
+    Exe["cp"] = "cp"
   if(_e_(Exe["curl"]))
-    Exe["curl"] = ...
+    Exe["curl"] = "curl"
   if(_e_(Exe["date"]))
-    Exe["date"] = ...
+    Exe["date"] = "date"
   if(_e_(Exe["diff"]))
-    Exe["diff"] = ...
+    Exe["diff"] = "diff"
   if(_e_(Exe["grep"]))
-    Exe["grep"] = ...
+    Exe["grep"] = "grep"
   if(_e_(Exe["gunzip"]))
-    Exe["gunzip"] = ...
+    Exe["gunzip"] = "gunzip"
   if(_e_(Exe["gzip"]))
-    Exe["gzip"] = ...
+    Exe["gzip"] = "gzip"
   if(_e_(Exe["head"]))
-    Exe["head"] = ...
+    Exe["head"] = "head"
   if(_e_(Exe["ln"]))
-    Exe["ln"] = ...
+    Exe["ln"] = "ln"
   if(_e_(Exe["ls"]))
-    Exe["ls"] = ...
+    Exe["ls"] = "ls"
   if(_e_(Exe["mailx"]))
-    Exe["mailx"] = ...
+    Exe["mailx"] = ""
   if(_e_(Exe["mkdir"]))
-    Exe["mkdir"] = ...
+    Exe["mkdir"] = "mkdir"
   if(_e_(Exe["mv"]))
-    Exe["mv"] = ...
+    Exe["mv"] = "mv"
   if(_e_(Exe["nice"]))
-    Exe["nice"] = ...
+    Exe["nice"] = "nice"
   if(_e_(Exe["printf"]))
-    Exe["printf"] = ...
+    Exe["printf"] = "printf"
   if(_e_(Exe["ps"]))
-    Exe["ps"] = ...
+    Exe["ps"] = "ps"
   if(_e_(Exe["rm"]))
-    Exe["rm"] = ...
+    Exe["rm"] = "rm"
   if(_e_(Exe["sed"]))
-    Exe["sed"] = ...
+    Exe["sed"] = "sed"
   if(_e_(Exe["shuf"]))
-    Exe["shuf"] = ...
+    Exe["shuf"] = "shuf"
   if(_e_(Exe["sort"]))
-    Exe["sort"] = ...
+    Exe["sort"] = "sort"
   if(_e_(Exe["split"]))
-    Exe["split"] = ...
+    Exe["split"] = "split"
   if(_e_(Exe["tac"]))
-    Exe["tac"] = ...
+    Exe["tac"] = "tac"
   if(_e_(Exe["tail"]))
-    Exe["tail"] = ...
+    Exe["tail"] = "tail"
   if(_e_(Exe["timeout"]))
-    Exe["timeout"] = ...
+    Exe["timeout"] = "timeout"
   if(_e_(Exe["uniq"]))
-    Exe["uniq"] = ...
+    Exe["uniq"] = "uniq"
   if(_e_(Exe["wc"]))
-    Exe["wc"] = ...
+    Exe["wc"] = "wc"
   if(_e_(Exe["wget"]))
-    Exe["wget"] = ...
+    Exe["wget"] = "wget"
   if(_e_(Exe["zcat"]))
-    Exe["zcat"] = ...
+    Exe["zcat"] = "zcat"
 
   # --------------------------------------
 
@@ -147,7 +168,7 @@ BEGIN {
 
   # GNU Parallel
   if(_e_(Exe["parallel"]))
-    Exe["parallel"] = ...
+    Exe["parallel"] = ""
 
   # File locking utility for Toolforge
   #  not needed if not using GridEngine
@@ -157,14 +178,14 @@ BEGIN {
   # Lynx Version 2.8.9dev.16 (11 Jul 2017)
   #  or any version that supports SSL 
   if(_e_(Exe["lynx"]))
-    Exe["lynx"] = ...
+    Exe["lynx"] = ""
 
   # Color inline diffs. Requires wdiff
   #  sudo apt-get install wdiff
   if(_e_(Exe["coldiff"]))
     Exe["coldiff"] = "coldiff"
   if(_e_(Exe["wdiff"]))
-    Exe["wdiff"] = ...
+    Exe["wdiff"] = ""
 
   # --------------------------------------
 
@@ -189,6 +210,42 @@ BEGIN {
   if(_e_(Exe["auniq"]))
     Exe["auniq"] = "auniq"
 
+}
+
+#
+# _syscfg_load() - read the local settings file (see the top of BEGIN). Self-contained, so it does not
+#   depend on library.awk. A missing file is not an error; a missing file: file gives an empty value
+#
+function _syscfg_load(file,   line, k, v, vf, r) {
+    while ((r = (getline line < file)) > 0) {
+        sub(/^[ \t]+/, "", line)
+        if (line == "" || line ~ /^#/ || !match(line, /[ \t]+/))
+            continue
+        k = substr(line, 1, RSTART - 1)
+        v = substr(line, RSTART + RLENGTH)
+        sub(/[ \t]+$/, "", v)
+        if (v ~ /^file:/) {
+            vf = substr(v, 6)
+            v = ""
+            if ((getline v < vf) > 0)
+                sub(/[ \t\r]+$/, "", v)
+            else
+                v = ""
+            close(vf)
+        }
+        if (k ~ /^Exe[.]/) {
+            if (_e_(Exe[substr(k, 5)]))
+                Exe[substr(k, 5)] = v
+        }
+        else if (k ~ /^[A-Z][a-z]/ && k in SYMTAB && !isarray(SYMTAB[k])) {
+            if (_e_(SYMTAB[k]))
+                SYMTAB[k] = v
+        }
+        else
+            BotWikiCfg[k] = v
+    }
+    if (r == 0)
+        close(file)
 }
 
 #

@@ -346,11 +346,11 @@ function mkdir(dir,    var, cwd) {
     system(Exe["mkdir"] " -p " shquote(dir) " 2>/dev/null")
     cwd = ENVIRON["PWD"]
     if (! chDir(dir)) {
-        StdErr("Could not create " shquote(dir) " (" ERRNO ")\n")
+        stdErr("Could not create " shquote(dir) " (" ERRNO ")")
         return 0
     }
     if (! chDir(cwd)) {
-        StdErr("Could not chdir to " shquote(cwd) " (" ERRNO ")\n")
+        stdErr("Could not chdir to " shquote(cwd) " (" ERRNO ")")
         return 0                              
     }           
     return 1    
@@ -474,11 +474,18 @@ function sys2varStderr(command        ,fish,scale,ship,c,a) {
 #   . return the HTML page as a string
 #   . optionally use wget options 'Wget_opts' gobally defined in syscfg.awk - or define it locally
 #   . converts ' to %27 and ’ to %E2%80%99
+#   . a URL longer than 4000 is passed to wget in a file (wget -i) to avoid the shell length limit.
+#     Most web servers reject a URL over about 8000 - use http2varPOST() for those
+#   . optional globals, set by the calling program (default off):
+#       Http2varFast = 1 - strip wget's own retry/timeout options from Wget_opts so the backoff loop below
+#                          is the only retry, add short connect/read timeouts, and cap each try at 2m (not 20m)
+#       Http2var404  = 1 - after a failed try, check the URL with wget --spider and give up on a 404
+#                          (costs one extra request per failed try)
 #
 #   Requirement: Exe["wget"]
 #   Requirement: Exe["timeout"]
 #
-function http2var(url,tries,  debug,i,op,wait) {
+function http2var(url,tries,  debug,i,op,wait,command,opts,limit,tmpfile,spider) {
 
      debug = 0
 
@@ -493,15 +500,42 @@ function http2var(url,tries,  debug,i,op,wait) {
      if (url ~ /’/)
          gsub(/’/, "%E2%80%99", url)
 
-     command = Exe["timeout"] " 20m " Exe["wget"] Wget_opts " -q -O- " shquote(url)
+     opts = Wget_opts
+     limit = "20m"
+     if (Http2varFast) {
+         gsub(/--tries=[0-9]+/, "", opts)
+         gsub(/--timeout=[0-9]+/, "", opts)
+         gsub(/--waitretry=[0-9]+/, "", opts)
+         gsub(/--retry-connrefused/, "", opts)
+         gsub(/--retry-on-http-error=[0-9]+/, "", opts)
+         opts = opts " --connect-timeout=10 --read-timeout=30 --tries=1 "
+         limit = "2m"
+     }
+
+     if (length(url) > 4000) {
+         tmpfile = mktemp("/tmp/http2var_get.XXXXXX", "u")
+         printf("%s", url) > tmpfile
+         close(tmpfile)
+         command = Exe["timeout"] " " limit " " Exe["wget"] opts " -q -O- -i " shquote(tmpfile)
+     }
+     else
+         command = Exe["timeout"] " " limit " " Exe["wget"] opts " -q -O- " shquote(url)
 
      if(debug) stdErr(command)
 
      for (i = 1; i <= int(tries); i++) {
          op = sys2var(command)
-         if (!empty(op)) 
-             return op
-           
+         if (!empty(op))
+             break
+
+         if (Http2var404) {
+             spider = sys2var(Exe["timeout"] " 1m " Exe["wget"] opts " --spider -S -q " shquote(url) " 2>&1")
+             if (spider ~ /HTTP\/[0-9.]+ 404/) {
+                 if (debug) stdErr("http2var: HTTP 404 Not Found. Giving up.")
+                 break
+             }
+         }
+
          # Jittered Backoff: (2^i) + 0-10 seconds of random delay
          wait = (2 ^ i) + randomnumber(10)
          if (wait > 120) 
@@ -509,12 +543,16 @@ function http2var(url,tries,  debug,i,op,wait) {
          
          if (debug) 
              stdErr("http2var: Attempt " i "/" tries ". Retrying in " wait "s...")
- 
-         if (!empty(Exe["sleep"])) 
+
+         if (!empty(Exe["sleep"]))
              sleep(wait, "unix")
-         else 
+         else
              sleep(wait)
      }
+
+     if (!empty(tmpfile))
+         removefile2(tmpfile)
+     return op
 }
 
 #

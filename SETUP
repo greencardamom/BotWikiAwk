@@ -1,11 +1,32 @@
-=== syscfg.awk ===
+=== Settings ===
 
-This file in ~/BotWikiAwk/lib contains paths to dependencies and static strings.
+Your settings live in one file outside the BotWikiAwk directory:
 
-When running setp.sh it is automatically configured. If it can't find a unix tool it 
-will define the location as a blank string. This is not important, unless you need 
-that tool for your bot. For example 'shuf' is rarely needed so don't worry that it's
-missing - unless you need it, then install it, and manually add it's location to syscfg.
+  ~/.config/botwikiawk/settings     (or the file named by the environment variable BOTWIKIAWK_SETTINGS)
+
+The files in ~/BotWikiAwk/lib are never edited, so BotWikiAwk can be updated without losing
+anything. The file has one "key value" per line, # for comments. For example:
+
+  Exe.wget           /usr/bin/wget
+  Agent              MyBot/1.0 (User:MyName; me@example.com)
+  StopButton         https://en.wikipedia.org/wiki/User:MyName/button
+  UserPage           https://en.wikipedia.org/wiki/User:MyName
+  bot.default.home   /home/me/BotWikiAwk/bots/%s/
+
+The keys are described at the top of lib/syscfg.awk (paths to programs, Agent, email) and
+lib/botwiki.awk (stop button, user page, bot locations).
+
+setup.sh creates the file and adds the path of each dependency it finds, as Exe.<name>. If it
+can't find a unix tool it says so. This is not important, unless you need that tool for your bot.
+For example 'shuf' is rarely needed so don't worry that it's missing - unless you need it, then
+install it and add "Exe.shuf /path/to/shuf" to the settings file. Running setup.sh again only adds
+keys that are missing, it does not change your settings.
+
+=== Your own functions ===
+
+Put functions you want in every bot in ~/BotWikiAwk/lib/local.awk. syscfg.awk loads it into every
+program that uses BotWikiAwk. It ships empty and BotWikiAwk never changes it, so git pull leaves
+your copy alone. Don't add functions to the other files in lib/ - an update would replace them.
 
 === Email ===
 
@@ -13,7 +34,8 @@ BWA has support for sending email from any computer that has curl installed no o
 dependencies are reqired. You will only need an upstream SMTP server such as what an ISP
 provides for POP3/IMAP email clients.
 
-Email settings are in ~/BotWikiAwk/lib/syscfg.awk see that file for instructions.
+Email settings are the keys Exe.email_auth, Exe.from_email and Exe.to_email in the settings
+file - see lib/syscfg.awk for instructions.
 
 You can test email is working with this command:
 
@@ -31,14 +53,13 @@ original design of BWA and maintained for backward compatibility.
 
  ==== Location 1 ====
 
-In ~/BotWikiAwk/lib/botwiki.awk there is a case statement where a block of code
-defines the needed parameters for each bot. For example:
+In the settings file, each bot can have its home directory and Agent. For example:
 
-      case "accdate":                                          
-        Home = "/home/admin/bots/" BotName "/"
-        Agent = UserPage " (ask me about " BotName ")"
-        Engine = 0
-        break
+      bot.accdate.home    /home/admin/bots/accdate/
+      bot.accdate.agent   AccdateBot/1.0 (User:MyName)
+
+A bot without its own lines uses bot.default.home and bot.default.agent, where %s is the BotName
+and %u is UserPage. Without those, the Agent is UserPage " (ask me about " BotName ")".
 
 Then at the top of the program, define the bot's name like this:
 
@@ -51,7 +72,7 @@ This block comes before the @include statements.
  ==== Location 2 ====
 
 All cfg info resides in a BEGIN{} section at the top of the bot program. Nothing goes
-in ~/BotWikiAwk/lib/botwiki.awk 
+in the settings file
 
 The configuration looks like this. Notice it comes before the @include statements
 
@@ -83,9 +104,9 @@ The options:
 	. 'BotName' is the name of the directory defined in the _defaults which is also the name
            of the awk program. Thus, the BotName of "accdate" will be in the directory /home/admin/bots/accdate
            which contains a program accdate.awk
-	. 'Agent' is the user-agent used by wget/curl - or you can create a global Agent in botwiki.awk
+	. 'Agent' is the user-agent used by wget/curl - or set a global Agent in the settings file
 	. 'StopButton' is the URL to your bot's stop button page. If included here, it overrides the
-	   global default set in botwiki.awk - if StopButton is blank, BWA won't check it.
+	   global StopButton in the settings file - set StopButton = "none" for a bot that should not check it.
 	. 'Engine' is the parallel/concurrency method used for this bot:
 
 	     0 = none or GNU Parallel on a single computer
