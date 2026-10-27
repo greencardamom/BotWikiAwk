@@ -38,6 +38,7 @@ BEGIN {
   #   StopButton     https://en.wikipedia.org/wiki/User:MyName/button
   #   bot.mybot.home /home/me/bots/mybot/     - Home for BotName "mybot" (see botwiki.awk)
   #   Exe.to_email   file:/home/me/.secrets/to.email   - the value is the first line of that file
+  #   Exe.wikiget    ~/scripts/wikiget.awk    - a leading ~/ (also after file:) is your home directory
   #
   # Use file: for anything private, eg. email addresses, so the settings file itself holds none.
   # A key naming a global of the framework (Agent, Wget_opts, StopButton, UserPage, UserEmail, BotUser ..)
@@ -224,8 +225,12 @@ function _syscfg_load(file,   line, k, v, vf, r) {
         k = substr(line, 1, RSTART - 1)
         v = substr(line, RSTART + RLENGTH)
         sub(/[ \t]+$/, "", v)
+        if (v ~ /^~\//)
+            v = ENVIRON["HOME"] substr(v, 2)
         if (v ~ /^file:/) {
             vf = substr(v, 6)
+            if (vf ~ /^~\//)
+                vf = ENVIRON["HOME"] substr(vf, 2)
             v = ""
             if ((getline v < vf) > 0)
                 sub(/[ \t\r]+$/, "", v)

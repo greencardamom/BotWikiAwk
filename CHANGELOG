@@ -14,7 +14,8 @@
 #                         . a stop button is now off unless StopButton is set. A bot that set StopButton = "" to skip the
 #                           global one should now set StopButton = "none"
 #                       a value can be read from a file with file:/path, eg. "Exe.to_email file:/home/me/.secrets/to.email",
-#                         so the settings file need hold no email address
+#                         so the settings file need hold no email address. A value (or file: path) starting ~/ is
+#                         relative to your home directory
 #                       new lib/local.awk for your own functions, loaded by syscfg.awk into every program. It ships empty
 #                         and BotWikiAwk never changes it, so git pull leaves your copy alone. If you added functions to
 #                         lib/syscfg.awk (or another lib/ file), move them there

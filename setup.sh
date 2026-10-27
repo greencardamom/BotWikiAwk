@@ -188,9 +188,10 @@ fi
 
    # set shebangs and create symlinks
     else if(a[i] ~ /^awkbangs/) {
-      if(awkpath == "/usr/local/bin/gawk")
-        continue
-      stdErr("\nSet shebang to #!" awkpath)
+      # shebangs ship as /usr/local/bin/gawk - leave them when that is the gawk in use, but still create the symlinks
+      setbang = (awkpath != "/usr/local/bin/gawk")
+      if(setbang)
+        stdErr("\nSet shebang to #!" awkpath)
       c = split(splitx(a[i], "[=]", 2), b, " ")
       for(j = 1; j <= c; j++) {
         # create symlinks
@@ -203,6 +204,8 @@ fi
           }
         }
         # set shebangs
+        if(! setbang)
+          continue
         fp = readfile(strip(b[j]) )
         if(sub(/^[#][!]\/usr\/local\/bin\/[g]?awk/, "#!" awkpath, fp)) {
           print fp > b[j]
