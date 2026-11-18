@@ -208,6 +208,17 @@ function verifyval(val) {
 }
 
 #
+# verifyname - verify a command-line page title. Unlike verifyval() it allows a leading "-", eg the article "-core"
+#
+function verifyname(val) {
+  if(val == "") {
+    stdErr("Command line argument has an empty value when it should have something.")
+    exit
+  }
+  return val
+}
+
+#
 # sendlog - log (append) a line in a text file
 #
 #   . if you need more than 2 columns (ie. name|msg) format msg with separators in the string itself. 
@@ -252,6 +263,11 @@ function sendlog(database, name, msg, flag,    safed,safen,safem,sep) {
 #
 # . Returns a proto-tuple see tup() in library.awk 
 #
+# The CDN serves an old copy of action=raw for minutes after an edit. A unique parameter skips the cache
+function nocache() {
+  return "&nocache=" systime() PROCINFO["pid"]
+}
+
 function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,command,urlencoded,r,redirurl,redirect) {
 
   if(redir !~ /follow|dontfollow/)
@@ -267,7 +283,7 @@ function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,comma
   # See notes on action=raw at: https://phabricator.wikimedia.org/T126183#2775022
 
   if(empty(revid))
-    command = "https://" hostname "." domain "/w/index.php?title=" urlencoded "&action=raw"
+    command = "https://" hostname "." domain "/w/index.php?title=" urlencoded "&action=raw" nocache()
   else
     command = "https://" hostname "." domain "/w/index.php?title=" urlencoded "&action=raw&oldid=" revid
 
@@ -294,7 +310,7 @@ function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,comma
       redirect = convertxml(strip(r[0]))
       if(redir ~ /dontfollow/)
         return "REDIRECT" SUBSEP "#REDIRECT [[" redirect "]"
-      command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirect) "&action=raw"
+      command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirect) "&action=raw" nocache()
       f = http2var(command)
     }
     else if(match(f, /[#][ ]{0,}[Rr][Ee][^]]*[]]/, r) > 0) {                       # #REDIRECT[[pagename#section]]
@@ -303,7 +319,7 @@ function getwikisource(namewiki,redir,domain,hostname,revid,    f,ex,k,a,b,comma
       redirect = convertxml(strip(r[0]))
       if(redir ~ /dontfollow/)
         return "REDIRECT" SUBSEP "#REDIRECT [[" redirect "]"
-      command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirect) "&action=raw"
+      command = "https://" hostname "." domain "/w/index.php?title=" urlencodeawk(redirect) "&action=raw" nocache()
       f = http2var(command)
     }
     else {
@@ -711,7 +727,7 @@ function stopbutton(button,bb,  command,butt,i) {
   if(urlElement(StopButton, "path") ~ /^\/wiki\// && urlElement(StopButton, "netloc") ~ /wikipedia[.]org/)
     StopButton = subs("/wiki/", "/w/index.php?title=", StopButton)
 
-  command = "timeout --foreground 20s wget " Wget_opts " -q -O- " shquote(StopButton "&action=raw")
+  command = "timeout --foreground 20s wget " Wget_opts " -q -O- " shquote(StopButton "&action=raw" nocache())
   button = sys2var(command)
 
   if(button ~ /[Aa]ction[ ]{0,}[=][ ]{0,}[Rr][Uu][Nn]/)
